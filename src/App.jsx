@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "./pages/Home";
 import OpenFile from "./pages/OpenFile";
+import WorkFlow from "./pages/WorkFlow";
 
 const router = createBrowserRouter([
   {
@@ -10,6 +11,10 @@ const router = createBrowserRouter([
   {
     path: "/chooseFile",
     element: <OpenFile />,
+  },
+  {
+    path: "/workFlow",
+    element: <WorkFlow />,
   },
 ]);
 

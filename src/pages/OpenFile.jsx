@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Nav from "../components/Nav";
 
 const OpenFile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -105,19 +106,7 @@ const OpenFile = () => {
 
   return (
     <section>
-      <div className="header flex justify-center items-center relative h-[120px]">
-        <img
-          src="../../public/images/logoImg.png"
-          alt="Logo Image"
-          className="m-0 -mx-[40px]"
-        />
-        <img
-          src="../../public/images/logoWord.png"
-          alt="Logo Text"
-          className="m-0 -mx-[40px]"
-        />
-      </div>
-
+      <Nav />
       <div className="filter h-[138px] bg-[#189ab4] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] flex justify-center gap-[10px] items-center">
         {/* Search Input */}
         <div className="relative">

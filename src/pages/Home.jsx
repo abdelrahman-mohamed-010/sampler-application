@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import * as XLSX from "xlsx";
 import { addTable } from "../redux/tableSlice";
 
 const Home = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleFileUpload = (event) => {
     const uploadedFile = event.target.files[0];
@@ -29,6 +30,7 @@ const Home = () => {
         };
 
         dispatch(addTable(fileInfo));
+        navigate("/workFlow");
       };
 
       reader.readAsBinaryString(uploadedFile);
