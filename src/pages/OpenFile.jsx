@@ -171,11 +171,11 @@ const OpenFile = () => {
         <button
           onClick={handleOpenFile}
           disabled={selectedFile === null}
-          className={`h-[70px] text-white rounded font-bold text-[20px] w-[131px] border-2 border-[#05445e] cursor-pointer 
+          className={`h-[70px] rounded font-bold text-[20px] w-[131px] border-2 border-[#05445e] cursor-pointer 
             ${
               selectedFile !== null
-                ? "hover:bg-[#189ab4] hover:text-white bg-white  text-[#05445E]"
-                : "disabled:cursor-not-allowed disabled:bg-[#afafaf] disabled:border-none"
+                ? "hover:bg-[#189ab4] hover:text-white bg-white  text-dark"
+                : "disabled:cursor-not-allowed text-white disabled:bg-[#afafaf] disabled:border-none"
             }`}
         >
           Open

@@ -1,29 +1,22 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import * as XLSX from "xlsx";
+import { addTable } from "../redux/tableSlice";
 
 const Home = () => {
-  // const [file, setFile] = useState(null);
-  const [tableData, setTableData] = useState(null);
+  const dispatch = useDispatch();
 
   const handleFileUpload = (event) => {
     const uploadedFile = event.target.files[0];
     if (uploadedFile) {
-      // Read and parse Excel file
       const reader = new FileReader();
 
       reader.onload = (e) => {
-        // Parse the file
         const workbook = XLSX.read(e.target.result, { type: "binary" });
-
-        // Get the first sheet name
         const sheetName = workbook.SheetNames[0];
-
-        // Convert sheet to JSON
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Create file info object
         const fileInfo = {
           name: uploadedFile.name,
           type: uploadedFile.type,
@@ -35,10 +28,9 @@ const Home = () => {
           },
         };
 
-        setTableData(fileInfo);
+        dispatch(addTable(fileInfo));
       };
 
-      // Read the file as binary string
       reader.readAsBinaryString(uploadedFile);
     }
   };
@@ -46,8 +38,6 @@ const Home = () => {
   const handleImportClick = () => {
     document.getElementById("fileInput").click();
   };
-
-  console.log(tableData);
 
   return (
     <section id="firstSection">
@@ -58,7 +48,6 @@ const Home = () => {
           className="w-[565px] h-[565px]"
         />
         <div className="flex flex-col absolute bottom-[-50px]">
-          {/* Hidden input for file upload */}
           <input
             id="fileInput"
             type="file"
