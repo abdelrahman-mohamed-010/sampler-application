@@ -4,6 +4,8 @@ const OpenFile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [sortBy, setSortBy] = useState("latest");
+  const [isFocused, setIsFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const allFiles = [
     { name: "Project Report", date: "2024-01-15" },
@@ -16,6 +18,11 @@ const OpenFile = () => {
     { name: "Product Roadmap", date: "2024-03-15" },
     { name: "Team Performance", date: "2024-03-23" },
   ];
+
+  // Filter results based on search query
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
 
   const handleFileClick = (sectionIndex, fileIndex) => {
     setSelectedSection(sectionIndex);
@@ -79,6 +86,23 @@ const OpenFile = () => {
     });
   };
 
+  // Improved search filtering based on section names
+  const filteredSections = (() => {
+    // Get original grouped files
+    const sections = groupFilesByMonthAndYear(sortBy);
+
+    // Prepare search query
+    const normalizedQuery = searchQuery.toLowerCase().trim();
+
+    // If no search query, return all sections
+    if (!normalizedQuery) return sections;
+
+    // Filter sections based on their title (month name)
+    return sections.filter((section) =>
+      section.title.toLowerCase().startsWith(normalizedQuery)
+    );
+  })();
+
   return (
     <section>
       <div className="header flex justify-center items-center relative h-[120px]">
@@ -100,13 +124,31 @@ const OpenFile = () => {
           <input
             type="text"
             placeholder="Search"
-            className="search-input w-[288px] rounded h-[70px] text-[#05445e] focus:outline-none focus:border-dark focus:border-2 text-[20px] pl-[46px] outline-none"
+            value={searchQuery}
+            onFocus={() => setIsFocused(true)}
+            onChange={(e) => handleSearch(e.target.value)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+            className="search-input w-[288px] rounded h-[70px] text-[#05445e]
+          focus:outline-none focus:border-dark focus:border-2 text-[20px]
+          pl-[46px] outline-none"
           />
           <img
             src="../../public/images/search.png"
             alt="Search Icon"
             className="absolute left-[10px] bottom-[20px]"
           />
+          {isFocused && searchQuery && (
+            <div className=" absolute bottom-0  max-h-[300px] overflow-auto -translate-y-[-110%] rounded  w-[288px] bg-slate-50 tracking-wide text-dark font-semibold  text-lg cursor-pointer shadow-lg ">
+              {filteredSections.map((section, index) => (
+                <div
+                  key={index}
+                  className=" py-3 hover:bg-slate-200 transition-all px-3"
+                >
+                  {section.title}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="custom-dropdown relative">
@@ -132,7 +174,7 @@ const OpenFile = () => {
           className={`h-[70px] text-white rounded font-bold text-[20px] w-[131px] border-2 border-[#05445e] cursor-pointer 
             ${
               selectedFile !== null
-                ? "hover:bg-[#189ab4] hover:text-white bg-white text-dark"
+                ? "hover:bg-[#189ab4] hover:text-white bg-white  text-[#05445E]"
                 : "disabled:cursor-not-allowed disabled:bg-[#afafaf] disabled:border-none"
             }`}
         >
@@ -141,7 +183,7 @@ const OpenFile = () => {
       </div>
 
       <div className="flex flex-col items-center justify-center gap-[130px] my-[120px]">
-        {groupFilesByMonthAndYear(sortBy).map((section, sectionIndex) => (
+        {filteredSections.map((section, sectionIndex) => (
           <div className="section" key={sectionIndex}>
             <h2 className="py-[20px] text-[#05445e] font-semibold text-[25px]">
               {section.title}
@@ -158,7 +200,7 @@ const OpenFile = () => {
                       : "hover:bg-[#189ab4] hover:text-white"
                   }`}
               >
-                {file.name} - {file.date}
+                {file.name}
               </span>
             ))}
           </div>
@@ -169,5 +211,3 @@ const OpenFile = () => {
 };
 
 export default OpenFile;
-
-
