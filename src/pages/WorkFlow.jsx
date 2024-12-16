@@ -4,16 +4,14 @@ import Menu from "../components/Menu";
 import Table from "../components/Table";
 
 const WorkFlow = () => {
-  const [inputValue, setInputValue] = useState("FIRST PAGE");
+  const [inputValue, setInputValue] = useState("TYPE PAGE NAME");
   const [isEditable, setIsEditable] = useState(true);
-
-  //  const activeTable = useSelector((state) => state.tables.activeTable);
 
   const handleKeyPress = (event) => {
     if (
       event.key === "Enter" &&
       inputValue.trim() !== "" &&
-      inputValue !== "FIRST PAGE"
+      inputValue !== "TYPE PAGE NAME"
     ) {
       setIsEditable(false);
     }
@@ -26,8 +24,8 @@ const WorkFlow = () => {
   return (
     <main>
       <Nav />
-      <Menu />
-      <div className="h-[96px] flex justify-center items-center font-bold text-[20px] text-dark border-dark border">
+      <Menu isEditable={isEditable} />
+      <div className="h-[96px] flex justify-center items-center font-bold text-[20px] text-primary border-dark border">
         {isEditable ? (
           <input
             autoFocus
@@ -46,7 +44,7 @@ const WorkFlow = () => {
           </span>
         )}
       </div>
-      <Table />
+      <Table isEditable={isEditable} />
     </main>
   );
 };

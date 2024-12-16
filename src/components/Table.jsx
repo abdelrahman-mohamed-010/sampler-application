@@ -1,41 +1,72 @@
 import { useSelector } from "react-redux";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
-const Table = () => {
-  const activeTable = useSelector((state) => state.tables.activeTable);
-  const [activePage, setActivePage] = useState(
-    Object.keys(activeTable.data)[0]
+// eslint-disable-next-line react/prop-types
+const Table = ({ isEditable }) => {
+  // Provide a default empty state to prevent null errors
+  const activeTable = useSelector(
+    (state) =>
+      state.tables?.activeTable || {
+        data: {},
+      }
   );
 
-  if (!activeTable || !activeTable.data) {
-    return <div className="p-4 text-gray-500">No table data available</div>;
-  }
+  // Use useMemo to memoize sheet names and prevent unnecessary re-renders
+  const sheetNames = useMemo(() => {
+    return activeTable.data ? Object.keys(activeTable.data) : [];
+  }, [activeTable.data]);
 
-  const sheetNames = Object.keys(activeTable.data);
-  const sheetData = activeTable.data[activePage];
+  // Initialize active page with first sheet or null
+  const [activePage, setActivePage] = useState(
+    sheetNames.length > 0 ? sheetNames[0] : null
+  );
 
-  if (!sheetData || sheetData.length === 0) {
-    return <div className="p-4 text-gray-500">No sheet data available</div>;
-  }
+  // Memoize sheet data to improve performance
+  const sheetData = useMemo(() => {
+    return activePage && activeTable.data
+      ? activeTable.data[activePage] || []
+      : [];
+  }, [activePage, activeTable.data]);
 
-  const columns = Object.keys(sheetData[0]).filter((key) => key !== "rowNum");
+  // Determine columns, filtering out rowNum
+  const columns = useMemo(() => {
+    return sheetData.length > 0
+      ? Object.keys(sheetData[0]).filter((key) => key !== "rowNum")
+      : [];
+  }, [sheetData]);
 
+  // Compute total rows to maintain consistent UI
   const totalRows = Math.max(sheetData.length, 10);
 
+  // Render loading or empty states
+  if (!activeTable || !activeTable.data || sheetNames.length === 0) {
+    return (
+      <div className="p-4 text-gray-500 text-center">
+        No table data available
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white shadow-lg flex">
-      <div className="w-[200px] ">
-        <div className="h-[96px]  bg-[#AFAFAF] border-r border-dark text-white  border-l text-[20px] text-center flex items-center justify-center font-semibold">
+    <div
+      className={`bg-white shadow-lg flex ${
+        isEditable ? "opacity-50 pointer-events-none" : ""
+      }`}
+    >
+      {/* Sheet Navigation Column */}
+      <div className="w-[200px]">
+        <div className="h-[96px] bg-[#AFAFAF] border-r border-dark text-white border-l text-[20px] text-center flex items-center justify-center font-semibold">
           PAGES
         </div>
         {sheetNames.map((sheetName) => (
           <div
             key={sheetName}
-            onClick={() => setActivePage(sheetName)}
-            className={`p-6 px-16 border-r font-bold border-dark text-[#05445e]  uppercase tracking-wider text-center cursor-pointer border-b  last:border-b-0 
+            onClick={!isEditable ? () => setActivePage(sheetName) : undefined}
+            className={`p-6 px-16 border-r font-bold border-dark text-[#05445e] uppercase tracking-wider text-center 
+              ${!isEditable ? "cursor-pointer" : "cursor-default"}
               ${
                 activePage === sheetName
-                  ? "bg-primary text-white "
+                  ? `${isEditable ? "bg-[#8E8D8D]" : " bg-primary"}  text-white`
                   : "hover:bg-gray-100"
               }`}
           >
@@ -43,21 +74,26 @@ const Table = () => {
           </div>
         ))}
         {/* Fill empty rows to match main table */}
-        {Array.from({ length: totalRows - sheetNames.length }).map(
+        {Array.from({ length: Math.max(0, totalRows - sheetNames.length) }).map(
           (_, index) => (
             <div
               key={`empty-sheet-${index}`}
-              className="p-6 px-16 border-r border-r-dark  text-[#05445e] h-[72.8px] font-normal text-center border-b border-dark last:border-b-0"
+              className="p-6 px-16 border-r border-r-dark text-[#05445e] h-[72.8px] font-normal text-center border-b border-dark last:border-b-0"
             >
               {/* Empty row */}
             </div>
           )
         )}
-      </div>{" "}
+      </div>
+
       <div className="flex-grow overflow-x-auto">
         <table className="w-full border-collapse">
           <thead className="h-[96px]">
-            <tr className="bg-dark text-white text-[20px] text-center">
+            <tr
+              className={`${
+                isEditable ? "bg-[#8E8D8D]" : " bg-dark"
+              }  text-white text-[20px] text-center`}
+            >
               <th className="p-2 font-semibold w-12 border-r border-white">
                 Line
               </th>
@@ -91,30 +127,29 @@ const Table = () => {
               </tr>
             ))}
             {/* Fill rows to match sheet navigation height */}
-            {Array.from({ length: totalRows - sheetData.length }).map(
-              (_, index) => (
-                <tr
-                  key={`empty-${index}`}
-                  className="border-b border-dark last:border-b-0"
-                >
-                  <td className="p-6 px-16 text-[#05445e] font-normal border-r border-dark">
-                    {sheetData.length + index + 1}
+            {Array.from({
+              length: Math.max(0, totalRows - sheetData.length),
+            }).map((_, index) => (
+              <tr
+                key={`empty-${index}`}
+                className="border-b border-dark last:border-b-0"
+              >
+                <td className="p-6 px-16 text-[#05445e] font-normal border-r border-dark">
+                  {sheetData.length + index + 1}
+                </td>
+                {columns.map((column, colIndex) => (
+                  <td
+                    key={colIndex}
+                    className="p-6 text-[#05445e] text-center font-normal border-r border-dark last:border-r-0"
+                  >
+                    {/* Empty cell */}
                   </td>
-                  {columns.map((column, colIndex) => (
-                    <td
-                      key={colIndex}
-                      className="p-6 text-[#05445e]  text-center font-normal border-r border-dark last:border-r-0"
-                    >
-                      {/* Empty cell */}
-                    </td>
-                  ))}
-                </tr>
-              )
-            )}
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-      {/* Sheet Navigation Column */}
     </div>
   );
 };
