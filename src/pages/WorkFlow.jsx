@@ -1,10 +1,13 @@
 import { useState } from "react";
 import Nav from "../components/Nav";
 import Menu from "../components/Menu";
+import Table from "../components/Table";
 
 const WorkFlow = () => {
   const [inputValue, setInputValue] = useState("FIRST PAGE");
   const [isEditable, setIsEditable] = useState(true);
+
+  //  const activeTable = useSelector((state) => state.tables.activeTable);
 
   const handleKeyPress = (event) => {
     if (
@@ -27,6 +30,7 @@ const WorkFlow = () => {
       <div className="h-[96px] flex justify-center items-center font-bold text-[20px] text-dark border-dark border">
         {isEditable ? (
           <input
+            autoFocus
             type="text"
             value={inputValue}
             onChange={handleChange}
@@ -42,9 +46,9 @@ const WorkFlow = () => {
           </span>
         )}
       </div>
+      <Table />
     </main>
   );
 };
 
 export default WorkFlow;
-
