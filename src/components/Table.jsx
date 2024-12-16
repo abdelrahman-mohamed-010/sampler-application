@@ -35,7 +35,7 @@ const Table = () => {
             className={`p-6 px-16 border-r font-bold border-dark text-[#05445e]  uppercase tracking-wider text-center cursor-pointer border-b  last:border-b-0 
               ${
                 activePage === sheetName
-                  ? "bg-primary text-white border"
+                  ? "bg-primary text-white "
                   : "hover:bg-gray-100"
               }`}
           >
