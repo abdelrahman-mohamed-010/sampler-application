@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
-import { Save } from "lucide-react";
 import { CustomDropdown } from "./ui/CustomDropdown";
+import SaveOption from "./SaveOption";
 
 const Menu = ({ isEditable = true }) => {
   const sampleOptions = [
@@ -76,14 +76,7 @@ const Menu = ({ isEditable = true }) => {
         isEditable={isEditable}
       />
 
-      {!isEditable && (
-        <button
-          className="w-[103px] h-[70px] bg-dark rounded flex justify-center items-center"
-          disabled={isEditable}
-        >
-          <Save size={50} className=" text-white" />
-        </button>
-      )}
+      {!isEditable && <SaveOption isEditable={isEditable} />}
     </div>
   );
 };
