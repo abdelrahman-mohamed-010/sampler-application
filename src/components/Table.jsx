@@ -88,7 +88,7 @@ const Table = ({ isEditable }) => {
 
       <div className="flex-grow overflow-x-auto">
         <table className="w-full border-collapse">
-          <thead className="h-[96px]">
+          <thead className="h-[95.6px]">
             <tr
               className={`${
                 isEditable ? "bg-[#8E8D8D]" : " bg-dark"
@@ -134,7 +134,7 @@ const Table = ({ isEditable }) => {
                 key={`empty-${index}`}
                 className="border-b border-dark last:border-b-0"
               >
-                <td className="p-6 px-16 text-[#05445e] font-normal border-r border-dark">
+                <td className="p-6 px-16 text-[#05445e]  font-normal border-r border-dark">
                   {sheetData.length + index + 1}
                 </td>
                 {columns.map((column, colIndex) => (
