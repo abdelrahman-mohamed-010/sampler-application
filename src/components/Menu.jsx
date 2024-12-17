@@ -1,5 +1,20 @@
-// eslint-disable-next-line react/prop-types
+/* eslint-disable react/prop-types */
+import { CustomDropdown } from "./ui/CustomDropdown";
+
 const Menu = ({ isEditable = true }) => {
+  const sampleOptions = [
+    { value: "Random Sample", label: "Random Sample" },
+    { value: "Fixed Step", label: "Fixed Step" },
+    { value: "Variable Step", label: "Variable Step" },
+    { value: "Weighted Random", label: "Weighted Random" },
+    { value: "Block Selection", label: "Block Selection" },
+  ];
+
+  const SortBy = [
+    { value: "Newest", label: "Newest" },
+    { value: "Oldest", label: "Oldest" },
+  ];
+
   return (
     <div
       className={`filter h-[138px] shadow-lg flex px-4 gap-4 justify-center items-center ${
@@ -20,54 +35,11 @@ const Menu = ({ isEditable = true }) => {
         Create Page
       </button>
 
-      <div className="custom-dropdown relative">
-        <select
-          className={`
-            sort-dropdown shadow-lg appearance-none rounded px-[10px] pr-[40px] border-[1pt] h-[70px] text-[20px] bg-white w-[289px] font-normal 
-            ${
-              isEditable
-                ? "cursor-not-allowed text-gray-400"
-                : "focus:outline-none focus:border-dark focus:border-2 border-none"
-            }
-          `}
-          disabled={false}
-        >
-          <option
-            className="bg-white"
-            style={{ backgroundColor: "white", color: "black" }}
-            value=""
-            disabled
-            selected
-          >
-            Sample Selection
-          </option>
-          {!isEditable && (
-            <>
-              <option
-                className="bg-white"
-                style={{ backgroundColor: "white", color: "black" }}
-                value="latest"
-              >
-                Latest First
-              </option>
-              <option
-                className="bg-white"
-                style={{ backgroundColor: "white", color: "black" }}
-                value="oldest"
-              >
-                Oldest First
-              </option>
-            </>
-          )}
-        </select>
-        {!isEditable && (
-          <img
-            className="dropdown-icon absolute right-[16px] top-1/2 transform -translate-y-1/2 w-[19px] pointer-events-none"
-            src="../../public/images/DropDown.png"
-            alt="Dropdown Icon"
-          />
-        )}
-      </div>
+      <CustomDropdown
+        options={SortBy}
+        placeholder="Sort By"
+        isEditable={isEditable}
+      />
 
       <button
         className={`
@@ -97,54 +69,11 @@ const Menu = ({ isEditable = true }) => {
         Population Homogeneity
       </button>
 
-      <div className="custom-dropdown relative">
-        <select
-          className={`
-            sort-dropdown shadow-lg appearance-none rounded px-[10px] pr-[40px] border-[1pt] h-[70px] text-[20px] bg-white w-[289px] font-normal 
-            ${
-              isEditable
-                ? "cursor-not-allowed text-gray-400"
-                : "focus:outline-none focus:border-dark focus:border-2 border-none"
-            }
-          `}
-          disabled={false}
-        >
-          <option
-            className="bg-white"
-            style={{ backgroundColor: "white", color: "black" }}
-            value=""
-            disabled
-            selected
-          >
-            Sample Selection
-          </option>
-          {!isEditable && (
-            <>
-              <option
-                className="bg-white"
-                style={{ backgroundColor: "white", color: "black" }}
-                value="latest"
-              >
-                Latest First
-              </option>
-              <option
-                className="bg-white"
-                style={{ backgroundColor: "white", color: "black" }}
-                value="oldest"
-              >
-                Oldest First
-              </option>
-            </>
-          )}
-        </select>
-        {!isEditable && (
-          <img
-            className="dropdown-icon absolute right-[16px] top-1/2 transform -translate-y-1/2 w-[19px] pointer-events-none"
-            src="../../public/images/DropDown.png"
-            alt="Dropdown Icon"
-          />
-        )}
-      </div>
+      <CustomDropdown
+        options={sampleOptions}
+        placeholder="Sample Selection"
+        isEditable={isEditable}
+      />
 
       {!isEditable && (
         <button
