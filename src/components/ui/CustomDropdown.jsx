@@ -39,7 +39,7 @@ export const CustomDropdown = ({
         `}
         onClick={() => !isEditable && setIsOpen(!isOpen)}
       >
-        <span className={`${isOpen ? "text-[#8E8D8D]" : " text-dark"}`}>
+        <span className={`${isOpen || isEditable ? "text-[#8E8D8D]" : " text-dark"}`}>
           {selectedOption?.label || placeholder}
         </span>
         {!isEditable && (
