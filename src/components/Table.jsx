@@ -3,7 +3,6 @@ import { useState, useMemo } from "react";
 
 // eslint-disable-next-line react/prop-types
 const Table = ({ isEditable }) => {
-  // Provide a default empty state to prevent null errors
   const activeTable = useSelector(
     (state) =>
       state.tables?.activeTable || {
@@ -11,34 +10,28 @@ const Table = ({ isEditable }) => {
       }
   );
 
-  // Use useMemo to memoize sheet names and prevent unnecessary re-renders
   const sheetNames = useMemo(() => {
     return activeTable.data ? Object.keys(activeTable.data) : [];
   }, [activeTable.data]);
 
-  // Initialize active page with first sheet or null
   const [activePage, setActivePage] = useState(
     sheetNames.length > 0 ? sheetNames[0] : null
   );
 
-  // Memoize sheet data to improve performance
   const sheetData = useMemo(() => {
     return activePage && activeTable.data
       ? activeTable.data[activePage] || []
       : [];
   }, [activePage, activeTable.data]);
 
-  // Determine columns, filtering out rowNum
   const columns = useMemo(() => {
     return sheetData.length > 0
       ? Object.keys(sheetData[0]).filter((key) => key !== "rowNum")
       : [];
   }, [sheetData]);
 
-  // Compute total rows to maintain consistent UI
   const totalRows = Math.max(sheetData.length, 10);
 
-  // Render loading or empty states
   if (!activeTable || !activeTable.data || sheetNames.length === 0) {
     return (
       <div className="p-4 text-gray-500 text-center">

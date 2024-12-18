@@ -2,10 +2,13 @@ import { useState } from "react";
 import Nav from "../components/Nav";
 import Menu from "../components/Menu";
 import Table from "../components/Table";
+import { useDispatch } from "react-redux";
+import { updateActiveTable } from "../redux/tableSlice";
 
 const WorkFlow = () => {
   const [inputValue, setInputValue] = useState("TYPE PAGE NAME");
   const [isEditable, setIsEditable] = useState(true);
+  const dispatch = useDispatch();
 
   const handleKeyPress = (event) => {
     if (
@@ -14,6 +17,7 @@ const WorkFlow = () => {
       inputValue !== "TYPE PAGE NAME"
     ) {
       setIsEditable(false);
+      dispatch(updateActiveTable({ name: inputValue }));
     }
   };
 
