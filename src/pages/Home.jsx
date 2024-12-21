@@ -7,36 +7,69 @@ const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleFileUpload = (event) => {
-    const uploadedFile = event.target.files[0];
-    if (uploadedFile) {
-      const reader = new FileReader();
+  // const handleFileUpload = (event) => {
+  //   const uploadedFile = event.target.files[0];
+  //   if (uploadedFile) {
+  //     const reader = new FileReader();
 
-      reader.onload = (e) => {
-        const workbook = XLSX.read(e.target.result, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
+  //     reader.onload = (e) => {
+  //       const workbook = XLSX.read(e.target.result, { type: "binary" });
+  //       const sheetName = workbook.SheetNames[0];
+  //       const worksheet = workbook.Sheets[sheetName];
+  //       const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+  //       const fileInfo = {
+  //         name: uploadedFile.name,
+  //         type: uploadedFile.type,
+  //         size: uploadedFile.size,
+  //         lastModified: uploadedFile.lastModified,
+  //         sheets: workbook.SheetNames,
+  //         data: {
+  //           [sheetName]: jsonData,
+  //         },
+  //       };
+
+  //       dispatch(addTable(fileInfo));
+  //       navigate("/workFlow");
+  //     };
+
+  //     reader.readAsBinaryString(uploadedFile);
+  //   }
+  // };
+const handleFileUpload = (event) => {
+  const uploadedFile = event.target.files[0];
+  if (uploadedFile) {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const workbook = XLSX.read(e.target.result, { type: "binary" });
+
+      // Create an object to store data from all sheets
+      const sheetsData = {};
+
+      // Process all sheets instead of just the first one
+      workbook.SheetNames.forEach((sheetName) => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        sheetsData[sheetName] = jsonData;
+      });
 
-        const fileInfo = {
-          name: uploadedFile.name,
-          type: uploadedFile.type,
-          size: uploadedFile.size,
-          lastModified: uploadedFile.lastModified,
-          sheets: workbook.SheetNames,
-          data: {
-            [sheetName]: jsonData,
-          },
-        };
-
-        dispatch(addTable(fileInfo));
-        navigate("/workFlow");
+      const fileInfo = {
+        name: uploadedFile.name,
+        type: uploadedFile.type,
+        size: uploadedFile.size,
+        lastModified: uploadedFile.lastModified,
+        sheets: workbook.SheetNames,
+        data: sheetsData,
       };
 
-      reader.readAsBinaryString(uploadedFile);
-    }
-  };
+      dispatch(addTable(fileInfo));
+      navigate("/workFlow");
+    };
 
+    reader.readAsBinaryString(uploadedFile);
+  }
+};
   const handleImportClick = () => {
     document.getElementById("fileInput").click();
   };

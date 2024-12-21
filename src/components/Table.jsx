@@ -9,6 +9,7 @@ const Table = ({ isEditable }) => {
         data: {},
       }
   );
+  console.log(activeTable)
 
   const sheetNames = useMemo(() => {
     return activeTable.data ? Object.keys(activeTable.data) : [];
