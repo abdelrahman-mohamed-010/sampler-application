@@ -2,20 +2,38 @@
 import { motion } from "framer-motion";
 import { CircleX } from "lucide-react";
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { updateActiveTable } from "../redux/tableSlice";
 
 const CreatePage = ({ onClose }) => {
-  const dummy = ["Page 1", "Page 2", "Page 3"];
+  // Replace dummy with sheets from activeTable
+  const activeTable = useSelector(
+    (state) => state.tables?.activeTable || { data: {} }
+  );
+  const sheets = Object.keys(activeTable.data || {});
 
-  // Single state object for all filters
+  // Updated filters state to include selected sheets
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
     justification: "",
     amountFrom: "",
     amountTo: "",
+    selectedSheets: [],
   });
 
-  // Single handler for all filter changes
+  const dispatch = useDispatch();
+
+  // Handle sheet selection
+  const handleSheetSelection = (sheet) => {
+    setFilters(prev => ({
+      ...prev,
+      selectedSheets: prev.selectedSheets.includes(sheet)
+        ? prev.selectedSheets.filter(s => s !== sheet)
+        : [...prev.selectedSheets, sheet]
+    }));
+  };
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({
@@ -43,13 +61,20 @@ const CreatePage = ({ onClose }) => {
           <h1 className="text-xl mt-6 text-primary font-semibold mb-3">
             Data from:
           </h1>
-          <div className="h-[150] overflow-y-hidden border-t border-r border-l border-black">
-            {dummy.map((page) => (
+          <div 
+            className={`${
+              sheets.length > 3 ? 'h-[120px]' : 'h-fit'
+            } overflow-y-auto border-t border-r border-l border-black`}
+          >
+            {sheets.map((sheet) => (
               <div
-                key={page}
-                className="h-[40px] text-start border-b border-black pl-8 content-center"
+                key={sheet}
+                className={`h-[40px] flex items-center border-b border-black pl-8 cursor-pointer ${
+                  filters.selectedSheets.includes(sheet) ? 'bg-primary text-white' : ''
+                }`}
+                onClick={() => handleSheetSelection(sheet)}
               >
-                {page}
+                {sheet}
               </div>
             ))}
           </div>

@@ -53,7 +53,7 @@ const Menu = ({ isEditable = true }) => {
           const dateB = parseDate(b["Entry Date"]);
           return dateA - dateB;
         });
-        
+
         // If newest is selected, reverse the array
         newData[sheet] = option.value === "Newest" ? sorted.reverse() : sorted;
       }
