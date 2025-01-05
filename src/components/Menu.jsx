@@ -4,14 +4,16 @@ import SaveOption from "./SaveOption";
 import Modal from "./ui/modal";
 import CreatePage from "./CreatePage";
 import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import * as XLSX from "xlsx";
+import { updateActiveTable } from "../redux/tableSlice";
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
+  const dispatch = useDispatch();
 
   const sampleOptions = [
     { value: "Random Sample", label: "Random Sample" },
@@ -36,6 +38,37 @@ const Menu = ({ isEditable = true }) => {
     });
     XLSX.writeFile(workbook, "table-data.xlsx");
   };
+
+  const handleSortBySelect = (option) => {
+    if (!activeTable?.data) return;
+    const newData = { ...activeTable.data };
+    Object.keys(newData).forEach((sheet) => {
+      if (
+        newData[sheet].length > 0 &&
+        Object.hasOwn(newData[sheet][0], "Entry Date")
+      ) {
+        // Always sort oldest first
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const dateA = parseDate(a["Entry Date"]);
+          const dateB = parseDate(b["Entry Date"]);
+          return dateA - dateB;
+        });
+        
+        // If newest is selected, reverse the array
+        newData[sheet] = option.value === "Newest" ? sorted.reverse() : sorted;
+      }
+    });
+    dispatch(updateActiveTable({ data: newData }));
+  };
+
+  function parseDate(dateStr) {
+    // Handles "1/3/17" by prepending "20" to the year
+    const parts = dateStr.split("/");
+    if (parts.length === 3 && parts[2].length === 2) {
+      parts[2] = "20" + parts[2];
+    }
+    return new Date(parts.join("/"));
+  }
 
   return (
     <>
@@ -68,6 +101,7 @@ const Menu = ({ isEditable = true }) => {
           options={SortBy}
           placeholder="Sort By"
           isEditable={isEditable}
+          onSelect={handleSortBySelect}
         />
 
         <button

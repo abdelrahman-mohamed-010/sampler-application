@@ -15,7 +15,7 @@ export const CustomDropdown = ({
     if (!isEditable) {
       setSelectedOption(option);
       setIsOpen(false);
-      onSelect && onSelect(option);
+      onSelect && onSelect(option); // Pass the full option object instead of option.value
     }
   };
 
