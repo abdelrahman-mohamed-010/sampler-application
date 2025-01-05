@@ -4,9 +4,14 @@ import SaveOption from "./SaveOption";
 import Modal from "./ui/modal";
 import CreatePage from "./CreatePage";
 import { useState } from "react";
+import { useSelector } from "react-redux";
+import * as XLSX from "xlsx";
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
+  const activeTable = useSelector(
+    (state) => state.tables?.activeTable || { data: {} }
+  );
 
   const sampleOptions = [
     { value: "Random Sample", label: "Random Sample" },
@@ -20,6 +25,17 @@ const Menu = ({ isEditable = true }) => {
     { value: "Newest", label: "Newest" },
     { value: "Oldest", label: "Oldest" },
   ];
+
+  const handleExportData = () => {
+    // Minimal example for creating an Excel file
+    const workbook = XLSX.utils.book_new();
+    Object.keys(activeTable.data).forEach((sheetName) => {
+      const sheetData = activeTable.data[sheetName];
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    });
+    XLSX.writeFile(workbook, "table-data.xlsx");
+  };
 
   return (
     <>
@@ -63,6 +79,7 @@ const Menu = ({ isEditable = true }) => {
               : "text-[#05445e] focus:outline-none focus:border-dark focus:border-2 border-none"
           }
         `}
+          onClick={handleExportData}
           disabled={isEditable}
         >
           Export Data

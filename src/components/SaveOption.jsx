@@ -1,15 +1,20 @@
 /* eslint-disable react/prop-types */
 import { Save, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useSelector } from "react-redux";
+import * as XLSX from "xlsx";
 
 const SaveOption = ({ isEditable }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState("All Pages");
+  const [showError, setShowError] = useState(false);
 
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  const activeTable = useSelector((state) => state.tables?.activeTable);
 
   const pages = ["All Pages", "Page 1", "Page 2"];
 
@@ -37,11 +42,12 @@ const SaveOption = ({ isEditable }) => {
     }
   };
 
-  const handleExportExcel = () => {
-    console.log("Exporting to Excel:", title, "Page:", selectedPage);
-  };
-
   const handleSaveInSampler = () => {
+    if (!title.trim()) {
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
+      return;
+    }
     console.log("Saving in Sampler:", title, "Page:", selectedPage);
   };
 
@@ -57,6 +63,22 @@ const SaveOption = ({ isEditable }) => {
       setTitle("");
     }
     setIsDropdownOpen(false);
+  };
+
+  const handleExportExcel = () => {
+    if (!title.trim()) {
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000); // Hide error after 3 seconds
+      return;
+    }
+    const workbook = XLSX.utils.book_new();
+    Object.keys(activeTable.data).forEach((sheetName) => {
+      const sheetData = activeTable.data[sheetName];
+      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    });
+    const fileName = title ? `${title}.xlsx` : 'table-data.xlsx';
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -123,18 +145,21 @@ const SaveOption = ({ isEditable }) => {
               className="w-full px-3 py-4 border-primary border bg-[#F7F7F7] rounded-md focus:outline-none"
               placeholder="ADD TITLE"
             />
+            {showError && (
+              <div className="text-red-500 text-sm mt-2 bg-red-50 p-2 rounded border border-red-200">
+                Please enter a title before proceeding
+              </div>
+            )}
           </div>
           <button
             onClick={handleExportExcel}
-            className="flex-1 bg-primary font-bold shadow-lg text-white py-4 mb-3 w-full text-center rounded cursor-pointer transition-colors"
-            disabled={!title}
+            className={`flex-1 bg-primary font-bold shadow-lg text-white py-4 mb-3 w-full text-center rounded cursor-pointer transition-colors ${!title.trim() && 'opacity-90 hover:bg-primary'}`}
           >
             Export as Excel File
           </button>
           <button
             onClick={handleSaveInSampler}
-            className="flex-1 bg-primary font-bold shadow-lg text-white cursor-pointer w-full text-center py-4 rounded transition-colors"
-            disabled={!title}
+            className={`flex-1 bg-primary font-bold shadow-lg text-white py-4 w-full text-center rounded cursor-pointer transition-colors ${!title.trim() && 'opacity-90 hover:bg-primary'}`}
           >
             Save in Sampler
           </button>
