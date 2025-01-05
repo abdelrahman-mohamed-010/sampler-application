@@ -15,8 +15,9 @@ const SaveOption = ({ isEditable }) => {
   const dropdownRef = useRef(null);
 
   const activeTable = useSelector((state) => state.tables?.activeTable);
-
-  const pages = ["All Pages", "Page 1", "Page 2"];
+  
+  // Get sheets from activeTable
+  const pages = ["All Pages", ...Object.keys(activeTable?.data || {})];
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -71,12 +72,23 @@ const SaveOption = ({ isEditable }) => {
       setTimeout(() => setShowError(false), 3000); // Hide error after 3 seconds
       return;
     }
+
     const workbook = XLSX.utils.book_new();
-    Object.keys(activeTable.data).forEach((sheetName) => {
-      const sheetData = activeTable.data[sheetName];
+    
+    if (selectedPage === "All Pages") {
+      // Export all sheets
+      Object.keys(activeTable.data).forEach((sheetName) => {
+        const sheetData = activeTable.data[sheetName];
+        const worksheet = XLSX.utils.json_to_sheet(sheetData);
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      });
+    } else {
+      // Export only selected sheet
+      const sheetData = activeTable.data[selectedPage];
       const worksheet = XLSX.utils.json_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-    });
+      XLSX.utils.book_append_sheet(workbook, worksheet, selectedPage);
+    }
+
     const fileName = title ? `${title}.xlsx` : 'table-data.xlsx';
     XLSX.writeFile(workbook, fileName);
   };
