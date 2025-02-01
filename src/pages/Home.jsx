@@ -26,14 +26,16 @@ const Home = () => {
           const processedData = jsonData.map((row) => {
             const newRow = { ...row };
             Object.keys(newRow).forEach((key) => {
-              if (typeof newRow[key] === "string" && !isNaN(newRow[key])) {
+              if (
+                key.toUpperCase() !== "AMOUNT" && // Skip AMOUNT column
+                typeof newRow[key] === "string" &&
+                !isNaN(newRow[key])
+              ) {
                 const potentialDate = XLSX.SSF.parse_date_code(
                   Number(newRow[key])
                 );
                 if (potentialDate) {
-                  newRow[
-                    key
-                  ] = `${potentialDate.m}/${potentialDate.d}/${potentialDate.y}`;
+                  newRow[key] = `${potentialDate.m}/${potentialDate.d}/${potentialDate.y}`;
                 }
               }
             });

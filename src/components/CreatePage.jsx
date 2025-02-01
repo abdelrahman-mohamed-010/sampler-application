@@ -10,6 +10,9 @@ const CreatePage = ({ onClose }) => {
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
+
+  console.log(activeTable); // For debugging
+
   const sheets = Object.keys(activeTable.data || {});
 
   // Updated filters state to include selected sheets
@@ -117,7 +120,8 @@ const CreatePage = ({ onClose }) => {
         data: {
           ...activeTable.data,
           [newSheetName]: newSheetData
-        }
+        },
+        sheets: [...(activeTable.sheets || []), newSheetName]  // Add new sheet to sheets array
       };
 
       console.log("New sheet data:", newSheetData); // For debugging

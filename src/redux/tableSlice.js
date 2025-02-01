@@ -3,6 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   tables: [],
   activeTable: null,
+  randomSample: null,
 };
 
 const tableSlice = createSlice({
@@ -22,10 +23,16 @@ const tableSlice = createSlice({
     clearActiveTable: (state) => {
       state.activeTable = null;
     },
+    setRandomSample: (state, action) => {
+      state.randomSample = action.payload;
+    },
+    clearRandomSample: (state) => {
+      state.randomSample = null;
+    },
   },
 });
 
-export const { addTable, setActiveTable, updateActiveTable, clearActiveTable } =
+export const { addTable, setActiveTable, updateActiveTable, clearActiveTable, setRandomSample, clearRandomSample } =
   tableSlice.actions;
 
 export default tableSlice.reducer;

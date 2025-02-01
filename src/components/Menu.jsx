@@ -4,12 +4,20 @@ import SaveOption from "./SaveOption";
 import Modal from "./ui/modal";
 import CreatePage from "./CreatePage";
 import { useState } from "react";
+import PopulationHomogeneity from "./PopulationHomogeneity";
 import { useSelector, useDispatch } from "react-redux";
 import * as XLSX from "xlsx";
 import { updateActiveTable } from "../redux/tableSlice";
+import RandomSampleModal from "./RandomSampleModal"; // new import
+import FixedStepModal from "./FixedStepModal"; // Add this import at the top
+import VariableStepModal from "./VariableStepModal"; // Import the new VariableStepModal
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
+  const [showPopulationModal, setShowPopulationModal] = useState(false);
+  const [showRandomSampleModal, setShowRandomSampleModal] = useState(false); // new state
+  const [showFixedStepModal, setShowFixedStepModal] = useState(false); // Add this state
+  const [showVariableStepModal, setShowVariableStepModal] = useState(false); // Add state for variable step modal
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
@@ -61,6 +69,17 @@ const Menu = ({ isEditable = true }) => {
     dispatch(updateActiveTable({ data: newData }));
   };
 
+  const handleSampleSelect = (option) => { // new handler
+    if (option.value === "Random Sample") {
+      setShowRandomSampleModal(true);
+    } else if (option.value === "Fixed Step") {
+      setShowFixedStepModal(true);
+    } else if (option.value === "Variable Step") {
+      setShowVariableStepModal(true);
+    }
+    // ...additional handling if needed...
+  };
+
   function parseDate(dateStr) {
     // Handles "1/3/17" by prepending "20" to the year
     const parts = dateStr.split("/");
@@ -75,6 +94,26 @@ const Menu = ({ isEditable = true }) => {
       {showModal && (
         <Modal open={showModal}>
           <CreatePage onClose={() => setShowModal(false)} />
+        </Modal>
+      )}
+      {showPopulationModal && (
+        <Modal open={showPopulationModal}>
+          <PopulationHomogeneity onClose={() => setShowPopulationModal(false)} />
+        </Modal>
+      )}
+      {showRandomSampleModal && ( // new modal rendering
+        <Modal open={showRandomSampleModal}>
+          <RandomSampleModal onClose={() => setShowRandomSampleModal(false)} />
+        </Modal>
+      )}
+      {showFixedStepModal && (
+        <Modal open={showFixedStepModal}>
+          <FixedStepModal onClose={() => setShowFixedStepModal(false)} />
+        </Modal>
+      )}
+      {showVariableStepModal && (
+        <Modal open={showVariableStepModal}>
+          <VariableStepModal onClose={() => setShowVariableStepModal(false)} />
         </Modal>
       )}
       <div
@@ -129,6 +168,7 @@ const Menu = ({ isEditable = true }) => {
           }
         `}
           disabled={isEditable}
+          onClick={() => setShowPopulationModal(true)}
         >
           Population Homogeneity
         </button>
@@ -137,6 +177,7 @@ const Menu = ({ isEditable = true }) => {
           options={sampleOptions}
           placeholder="Sample Selection"
           isEditable={isEditable}
+          onSelect={handleSampleSelect} // added handler
         />
 
         {!isEditable && <SaveOption isEditable={isEditable} />}
