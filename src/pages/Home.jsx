@@ -1,12 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import * as XLSX from "xlsx";
-import { addTable } from "../redux/tableSlice";
+import { setActiveTable } from "../redux/tableSlice";
 
 const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const handleFileUpload = (event) => {
     const uploadedFile = event.target.files[0];
     if (uploadedFile) {
@@ -21,7 +21,7 @@ const Home = () => {
           const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             raw: false,
             dateNF: "MM/DD/YYYY",
-            cellDates: true, 
+            cellDates: true,
           });
           const processedData = jsonData.map((row) => {
             const newRow = { ...row };
@@ -35,7 +35,9 @@ const Home = () => {
                   Number(newRow[key])
                 );
                 if (potentialDate) {
-                  newRow[key] = `${potentialDate.m}/${potentialDate.d}/${potentialDate.y}`;
+                  newRow[
+                    key
+                  ] = `${potentialDate.m}/${potentialDate.d}/${potentialDate.y}`;
                 }
               }
             });
@@ -54,14 +56,15 @@ const Home = () => {
           data: sheetsData,
         };
 
-        dispatch(addTable(fileInfo));
+        // Instead of adding to saved files, load the file as active for editing.
+        dispatch(setActiveTable(fileInfo));
         navigate("/workFlow");
       };
 
       reader.readAsBinaryString(uploadedFile);
     }
   };
-  
+
   const handleImportClick = () => {
     document.getElementById("fileInput").click();
   };

@@ -1,10 +1,12 @@
 /* eslint-disable react/prop-types */
 import { Save, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux"; // Added useDispatch
 import * as XLSX from "xlsx";
+import { storeTable } from "../redux/tableSlice"; // Use storeTable instead of addTable
 
 const SaveOption = ({ isEditable }) => {
+  const dispatch = useDispatch(); // Added dispatch hook
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -15,7 +17,7 @@ const SaveOption = ({ isEditable }) => {
   const dropdownRef = useRef(null);
 
   const activeTable = useSelector((state) => state.tables?.activeTable);
-  
+
   // Get sheets from activeTable
   const pages = ["All Pages", ...Object.keys(activeTable?.data || {})];
 
@@ -49,7 +51,22 @@ const SaveOption = ({ isEditable }) => {
       setTimeout(() => setShowError(false), 3000);
       return;
     }
-    console.log("Saving in Sampler:", title, "Page:", selectedPage);
+    // Build fileData based on chosen page
+    const fileData =
+      selectedPage === "All Pages"
+        ? activeTable.data
+        : { [selectedPage]: activeTable.data[selectedPage] };
+
+    // Use exactly the trimmed title as the file name
+    const newFile = {
+      ...activeTable,
+      name: title.trim(),
+      lastModified: Date.now(),
+      data: fileData,
+    };
+    dispatch(storeTable(newFile));
+    alert(`File "${title.trim()}" saved in Sampler successfully!`);
+    setIsOpen(false);
   };
 
   const handleDropdownToggle = () => {
@@ -74,7 +91,7 @@ const SaveOption = ({ isEditable }) => {
     }
 
     const workbook = XLSX.utils.book_new();
-    
+
     if (selectedPage === "All Pages") {
       // Export all sheets
       Object.keys(activeTable.data).forEach((sheetName) => {
@@ -89,7 +106,8 @@ const SaveOption = ({ isEditable }) => {
       XLSX.utils.book_append_sheet(workbook, worksheet, selectedPage);
     }
 
-    const fileName = title ? `${title}.xlsx` : 'table-data.xlsx';
+    // Use the trimmed title exactly for the file name
+    const fileName = `${title.trim()}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
 
@@ -165,13 +183,17 @@ const SaveOption = ({ isEditable }) => {
           </div>
           <button
             onClick={handleExportExcel}
-            className={`flex-1 bg-primary font-bold shadow-lg text-white py-4 mb-3 w-full text-center rounded cursor-pointer transition-colors ${!title.trim() && 'opacity-90 hover:bg-primary'}`}
+            className={`flex-1 bg-primary font-bold shadow-lg text-white py-4 mb-3 w-full text-center rounded cursor-pointer transition-colors ${
+              !title.trim() && "opacity-90 hover:bg-primary"
+            }`}
           >
             Export as Excel File
           </button>
           <button
             onClick={handleSaveInSampler}
-            className={`flex-1 bg-primary font-bold shadow-lg text-white py-4 w-full text-center rounded cursor-pointer transition-colors ${!title.trim() && 'opacity-90 hover:bg-primary'}`}
+            className={`flex-1 bg-primary font-bold shadow-lg text-white py-4 w-full text-center rounded cursor-pointer transition-colors ${
+              !title.trim() && "opacity-90 hover:bg-primary"
+            }`}
           >
             Save in Sampler
           </button>

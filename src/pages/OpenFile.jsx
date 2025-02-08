@@ -1,44 +1,37 @@
 import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { updateActiveTable } from "../redux/tableSlice";
+import { useNavigate } from "react-router-dom";
 import Nav from "../components/Nav";
 
 const OpenFile = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const savedFiles = useSelector((state) => state.tables?.tables) || [];
+
   const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedSection, setSelectedSection] = useState(null);
   const [sortBy, setSortBy] = useState("latest");
-  const [isFocused, setIsFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const allFiles = [
-    { name: "Project Report", date: "2024-01-15" },
-    { name: "Budget Analysis", date: "2024-01-22" },
-    { name: "Sales Forecast", date: "2024-01-05" },
-    { name: "Quarterly Review", date: "2024-02-10" },
-    { name: "Marketing Strategy", date: "2024-02-18" },
-    { name: "Client Presentation", date: "2024-02-25" },
-    { name: "Annual Plan", date: "2024-03-07" },
-    { name: "Product Roadmap", date: "2024-03-15" },
-    { name: "Team Performance", date: "2024-03-23" },
-  ];
-
-  // Filter results based on search query
   const handleSearch = (query) => {
     setSearchQuery(query);
   };
 
-  const handleFileClick = (sectionIndex, fileIndex) => {
-    setSelectedSection(sectionIndex);
-    setSelectedFile(fileIndex);
+  const handleFileClick = (index) => {
+    setSelectedFile(index);
   };
 
   const handleOpenFile = () => {
-    if (selectedFile !== null && selectedSection !== null) {
-      const groupedFiles = groupFilesByMonthAndYear(sortBy);
-      const selectedFileDetails =
-        groupedFiles[selectedSection].files[selectedFile];
-      alert(
-        `Opening file: ${selectedFileDetails.name} from ${selectedFileDetails.date}`
+    if (selectedFile !== null) {
+      const selectedFileDetails = sortedAndFilteredFiles[selectedFile];
+      dispatch(
+        updateActiveTable({
+          name: selectedFileDetails.name,
+          data: selectedFileDetails.data,
+          isNew: false // Mark as existing so WorkFlow becomes non‑editable
+        })
       );
-      // Add your file opening logic here
+      navigate("/workFlow");
     }
   };
 
@@ -46,77 +39,28 @@ const OpenFile = () => {
     setSortBy(e.target.value);
   };
 
-  const groupFilesByMonthAndYear = (sortOrder = "latest") => {
-    const groupedFiles = {};
-
-    allFiles.forEach((file) => {
-      const date = new Date(file.date);
-      const monthYear = date.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
-
-      if (!groupedFiles[monthYear]) {
-        groupedFiles[monthYear] = { title: monthYear, files: [] };
-      }
-
-      groupedFiles[monthYear].files.push(file);
-    });
-
-    // Convert to array and sort
-    const groupedFilesArray = Object.values(groupedFiles);
-
-    // Sort files within each group
-    groupedFilesArray.forEach((group) => {
-      group.files.sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        return sortOrder === "latest"
-          ? dateB.getTime() - dateA.getTime()
-          : dateA.getTime() - dateB.getTime();
-      });
-    });
-
-    // Sort groups themselves
-    return groupedFilesArray.sort((a, b) => {
-      const dateA = new Date(a.files[0].date);
-      const dateB = new Date(b.files[0].date);
-      return sortOrder === "latest"
+  const sortedAndFilteredFiles = [...savedFiles] // Create a shallow copy
+    .sort((a, b) => {
+      const dateA = new Date(a.lastModified);
+      const dateB = new Date(b.lastModified);
+      return sortBy === "latest"
         ? dateB.getTime() - dateA.getTime()
         : dateA.getTime() - dateB.getTime();
-    });
-  };
-
-  // Improved search filtering based on section names
-  const filteredSections = (() => {
-    // Get original grouped files
-    const sections = groupFilesByMonthAndYear(sortBy);
-
-    // Prepare search query
-    const normalizedQuery = searchQuery.toLowerCase().trim();
-
-    // If no search query, return all sections
-    if (!normalizedQuery) return sections;
-
-    // Filter sections based on their title (month name)
-    return sections.filter((section) =>
-      section.title.toLowerCase().startsWith(normalizedQuery)
+    })
+    .filter((file) =>
+      file.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  })();
 
   return (
     <section>
       <Nav />
       <div className="filter h-[138px] bg-[#189ab4] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] flex justify-center gap-[10px] items-center">
-        {/* Search Input */}
         <div className="relative">
           <input
             type="text"
             placeholder="Search"
             value={searchQuery}
-            onFocus={() => setIsFocused(true)}
             onChange={(e) => handleSearch(e.target.value)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 150)}
             className="search-input w-[288px] rounded h-[70px] text-[#05445e]
           focus:outline-none focus:border-dark focus:border-2 text-[20px]
           pl-[46px] outline-none"
@@ -126,18 +70,6 @@ const OpenFile = () => {
             alt="Search Icon"
             className="absolute left-[10px] bottom-[20px]"
           />
-          {isFocused && searchQuery && (
-            <div className=" absolute bottom-0  max-h-[300px] overflow-auto -translate-y-[-110%] rounded  w-[288px] bg-slate-50 tracking-wide text-dark font-semibold  text-lg cursor-pointer shadow-lg ">
-              {filteredSections.map((section, index) => (
-                <div
-                  key={index}
-                  className=" py-3 hover:bg-slate-200 transition-all px-3"
-                >
-                  {section.title}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="custom-dropdown relative">
@@ -156,7 +88,6 @@ const OpenFile = () => {
           />
         </div>
 
-        {/* Open Button */}
         <button
           onClick={handleOpenFile}
           disabled={selectedFile === null}
@@ -171,30 +102,28 @@ const OpenFile = () => {
         </button>
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-[130px] my-[120px]">
-        {filteredSections.map((section, sectionIndex) => (
-          <div className="section" key={sectionIndex}>
-            <h2 className="py-[20px] text-[#05445e] font-semibold text-[25px]">
-              {section.title}
-            </h2>
-            {section.files.map((file, fileIndex) => (
-              <span
-                key={fileIndex}
-                onClick={() => handleFileClick(sectionIndex, fileIndex)}
-                className={`block w-[989px] mb-[6px] transition-all ps-7 h-[70px] border border-[#05445e] rounded-[5px] text-[#05445e] text-[20px] py-[20px] cursor-pointer 
-                  ${
-                    selectedSection === sectionIndex &&
-                    selectedFile === fileIndex
-                      ? "bg-[#189ab4] text-white"
-                      : "hover:bg-[#189ab4] hover:text-white"
-                  }`}
-              >
-                {file.name}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
+      {sortedAndFilteredFiles.length ? (
+        <div className="flex flex-col items-center justify-center gap-[10px] my-[120px]">
+          {sortedAndFilteredFiles.map((file, index) => (
+            <span
+              key={index}
+              onClick={() => handleFileClick(index)}
+              className={`block w-[989px] mb-[6px] transition-all ps-7 h-[70px] border border-[#05445e] rounded-[5px] text-[#05445e] text-[20px] py-[20px] cursor-pointer 
+                ${
+                  selectedFile === index
+                    ? "bg-[#189ab4] text-white"
+                    : "hover:bg-[#189ab4] hover:text-white"
+                }`}
+            >
+              {file.name}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center my-[120px]">
+          <p className="text-gray-500 text-lg">No saved files found.</p>
+        </div>
+      )}
     </section>
   );
 };

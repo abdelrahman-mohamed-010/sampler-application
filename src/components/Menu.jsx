@@ -11,6 +11,8 @@ import { updateActiveTable } from "../redux/tableSlice";
 import RandomSampleModal from "./RandomSampleModal"; // new import
 import FixedStepModal from "./FixedStepModal"; // Add this import at the top
 import VariableStepModal from "./VariableStepModal"; // Import the new VariableStepModal
+import WeightedRandomModal from "./WeightedRandomModal"; // new import
+import BlockSelectionModal from "./BlockSelectionModal"; // Add import at the top
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
@@ -18,6 +20,8 @@ const Menu = ({ isEditable = true }) => {
   const [showRandomSampleModal, setShowRandomSampleModal] = useState(false); // new state
   const [showFixedStepModal, setShowFixedStepModal] = useState(false); // Add this state
   const [showVariableStepModal, setShowVariableStepModal] = useState(false); // Add state for variable step modal
+  const [showWeightedRandomModal, setShowWeightedRandomModal] = useState(false); // new state
+  const [showBlockSelectionModal, setShowBlockSelectionModal] = useState(false); // Add state
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
@@ -76,8 +80,11 @@ const Menu = ({ isEditable = true }) => {
       setShowFixedStepModal(true);
     } else if (option.value === "Variable Step") {
       setShowVariableStepModal(true);
+    } else if (option.value === "Weighted Random") {
+      setShowWeightedRandomModal(true);
+    } else if (option.value === "Block Selection") {
+      setShowBlockSelectionModal(true);
     }
-    // ...additional handling if needed...
   };
 
   function parseDate(dateStr) {
@@ -114,6 +121,16 @@ const Menu = ({ isEditable = true }) => {
       {showVariableStepModal && (
         <Modal open={showVariableStepModal}>
           <VariableStepModal onClose={() => setShowVariableStepModal(false)} />
+        </Modal>
+      )}
+      {showWeightedRandomModal && (
+        <Modal open={showWeightedRandomModal}>
+          <WeightedRandomModal onClose={() => setShowWeightedRandomModal(false)} />
+        </Modal>
+      )}
+      {showBlockSelectionModal && (
+        <Modal open={showBlockSelectionModal}>
+          <BlockSelectionModal onClose={() => setShowBlockSelectionModal(false)} />
         </Modal>
       )}
       <div

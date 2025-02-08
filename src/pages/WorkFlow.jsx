@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Nav from "../components/Nav";
 import Menu from "../components/Menu";
 import Table from "../components/Table";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { updateActiveTable } from "../redux/tableSlice";
 
 const WorkFlow = () => {
   const [inputValue, setInputValue] = useState("TYPE PAGE NAME");
-  const [isEditable, setIsEditable] = useState(true);
   const dispatch = useDispatch();
+  const activeTable = useSelector((state) => state.tables.activeTable);
+  const [isEditable, setIsEditable] = useState(activeTable?.isNew !== false);
+
+  useEffect(() => {
+    if (activeTable?.isNew === false) {
+      setInputValue(activeTable.name);
+    }
+  }, [activeTable]);
 
   const handleKeyPress = (event) => {
     if (
