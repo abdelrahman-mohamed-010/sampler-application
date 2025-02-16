@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import * as XLSX from "xlsx";
 import { setActiveTable } from "../redux/tableSlice";
+import logo from "../../public/images/logo.png";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -72,11 +73,7 @@ const Home = () => {
   return (
     <section id="firstSection">
       <div className="flex flex-col items-center justify-center relative select-none">
-        <img
-          src="../../public/images/logo.png"
-          alt="Logo"
-          className="w-[565px] h-[565px]"
-        />
+        <img src={logo} alt="Logo" className="w-[565px] h-[565px]" />
         <div className="flex flex-col absolute bottom-[-50px]">
           <input
             id="fileInput"
