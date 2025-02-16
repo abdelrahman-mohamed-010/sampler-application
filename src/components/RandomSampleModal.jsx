@@ -16,11 +16,17 @@ export default function RandomSampleModal({ onClose }) {
 
   const handleProceed = () => {
     if (!activeTable?.data) return;
-    
+
     // Find sheets with AMOUNT column
-    const sheetsWithAmount = Object.entries(activeTable.data).filter(([_, data]) => {
-      return Array.isArray(data) && data.length > 0 && Object.keys(data[0]).includes("AMOUNT");
-    });
+    const sheetsWithAmount = Object.entries(activeTable.data).filter(
+      ([_, data]) => {
+        return (
+          Array.isArray(data) &&
+          data.length > 0 &&
+          Object.keys(data[0]).includes("AMOUNT")
+        );
+      }
+    );
 
     if (sheetsWithAmount.length === 0) {
       setError("No sheets found with AMOUNT column");
@@ -29,7 +35,7 @@ export default function RandomSampleModal({ onClose }) {
 
     // Combine all valid records from qualifying sheets
     const population = sheetsWithAmount.flatMap(([_, data]) => data);
-    const actualSampleSize = sampleSize * 5; // Multiply by 5
+    const actualSampleSize = sampleSize; // Change sample size calculation: remove multiplication factor.
     const size = Math.min(actualSampleSize, population.length);
     const sample = [];
 
@@ -41,20 +47,20 @@ export default function RandomSampleModal({ onClose }) {
       "ENTRY NUMBER",
       "NARRATION",
       "AMOUNT",
-      "USER"
+      "USER",
     ];
 
     // Get random samples while preserving data structure
     for (let i = 0; i < size; i++) {
       const randomIndex = Math.floor(Math.random() * population.length);
       const selectedRow = population.splice(randomIndex, 1)[0];
-      
+
       // Ensure the row has all standard columns
       const formattedRow = {};
-      standardColumns.forEach(column => {
-        formattedRow[column] = selectedRow[column] || '';
+      standardColumns.forEach((column) => {
+        formattedRow[column] = selectedRow[column] || "";
       });
-      
+
       sample.push(formattedRow);
     }
 
@@ -76,7 +82,7 @@ export default function RandomSampleModal({ onClose }) {
 
     try {
       const newSheetName = pageName.trim();
-      
+
       // Check if sheet name already exists
       if (activeTable.data[newSheetName]) {
         setError("Page name already exists");
@@ -87,9 +93,9 @@ export default function RandomSampleModal({ onClose }) {
         ...activeTable,
         data: {
           ...activeTable.data,
-          [newSheetName]: randomSample
+          [newSheetName]: randomSample,
         },
-        sheets: [...(activeTable.sheets || []), newSheetName]
+        sheets: [...(activeTable.sheets || []), newSheetName],
       };
 
       dispatch(updateActiveTable(updatedTable));
@@ -128,7 +134,7 @@ export default function RandomSampleModal({ onClose }) {
               className="w-16 rounded border border-gray-300 px-2 py-1 text-center"
             />
             <span className="text-sm text-gray-500">
-              (Total rows: {sampleSize * 5})
+              (Total rows: {sampleSize})
             </span>
           </div>
 
@@ -163,13 +169,27 @@ export default function RandomSampleModal({ onClose }) {
                     <th className="font-semibold w-[5%] border-r border-white text-[14px]">
                       Line
                     </th>
-                    <th className="font-semibold w-[10%] border-r border-white text-[14px] px-2">ACOUNT CODE</th>
-                    <th className="font-semibold w-[15%] border-r border-white text-[14px] px-2">ACCOUNT NAME</th>
-                    <th className="font-semibold w-[12%] border-r border-white text-[14px] px-2">Entry Date</th>
-                    <th className="font-semibold w-[12%] border-r border-white text-[14px] px-2">ENTRY NUMBER</th>
-                    <th className="font-semibold w-[26%] border-r border-white text-[14px] px-2">NARRATION</th>
-                    <th className="font-semibold w-[10%] border-r border-white text-[14px] px-2">AMOUNT</th>
-                    <th className="font-semibold w-[10%] border-r border-white text-[14px] px-2">USER</th>
+                    <th className="font-semibold w-[10%] border-r border-white text-[14px] px-2">
+                      ACOUNT CODE
+                    </th>
+                    <th className="font-semibold w-[15%] border-r border-white text-[14px] px-2">
+                      ACCOUNT NAME
+                    </th>
+                    <th className="font-semibold w-[12%] border-r border-white text-[14px] px-2">
+                      Entry Date
+                    </th>
+                    <th className="font-semibold w-[12%] border-r border-white text-[14px] px-2">
+                      ENTRY NUMBER
+                    </th>
+                    <th className="font-semibold w-[26%] border-r border-white text-[14px] px-2">
+                      NARRATION
+                    </th>
+                    <th className="font-semibold w-[10%] border-r border-white text-[14px] px-2">
+                      AMOUNT
+                    </th>
+                    <th className="font-semibold w-[10%] border-r border-white text-[14px] px-2">
+                      USER
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -181,7 +201,15 @@ export default function RandomSampleModal({ onClose }) {
                       <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
                         {rowIndex + 1}
                       </td>
-                      {["ACOUNT CODE", "ACCOUNT NAME", "Entry Date", "ENTRY NUMBER", "NARRATION", "AMOUNT", "USER"].map((column, colIndex) => (
+                      {[
+                        "ACOUNT CODE",
+                        "ACCOUNT NAME",
+                        "Entry Date",
+                        "ENTRY NUMBER",
+                        "NARRATION",
+                        "AMOUNT",
+                        "USER",
+                      ].map((column, colIndex) => (
                         <td
                           key={colIndex}
                           className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
@@ -211,7 +239,7 @@ export default function RandomSampleModal({ onClose }) {
                 Create Page
               </button>
             </div>
-            
+
             {success && (
               <div className="mt-4 text-center text-green-500 font-medium">
                 {success}
@@ -222,7 +250,8 @@ export default function RandomSampleModal({ onClose }) {
 
         {!extracted && !error && (
           <div className="mt-6 text-center text-sm text-gray-500">
-            Add Sample Size to view more information from sheets with AMOUNT column
+            Add Sample Size to view more information from sheets with AMOUNT
+            column
           </div>
         )}
       </div>
