@@ -207,7 +207,7 @@ export default function FixedStepModal({ onClose }) {
 
             {/* Start Row Input */}
             <div className="flex items-center gap-2">
-              <span className="text-dark font-semibold text-lg">Row:</span>
+              <span className="text-dark font-semibold text-lg">Starting Row:</span>
               <input
                 type="number"
                 value={startingRow}
