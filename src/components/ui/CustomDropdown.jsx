@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import icon from "../../../public/images/DropDown.png";
 /* eslint-disable react/prop-types */
 export const CustomDropdown = ({
   options,
@@ -39,7 +39,11 @@ export const CustomDropdown = ({
         `}
         onClick={() => !isEditable && setIsOpen(!isOpen)}
       >
-        <span className={` ps-4 ${isOpen || isEditable ? "text-[#8E8D8D]" : " text-dark"}`}>
+        <span
+          className={` ps-4 ${
+            isOpen || isEditable ? "text-[#8E8D8D]" : " text-dark"
+          }`}
+        >
           {selectedOption?.label || placeholder}
         </span>
         {!isEditable && (
@@ -47,7 +51,7 @@ export const CustomDropdown = ({
             className={`dropdown-icon absolute right-[16px] top-1/2 transform -translate-y-1/2 w-[19px] pointer-events-none ${
               isOpen ? "rotate-180" : ""
             }`}
-            src="../../../public/images/DropDown.png"
+            src={icon}
             alt="Dropdown Icon"
           />
         )}
