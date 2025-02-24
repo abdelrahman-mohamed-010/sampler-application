@@ -256,7 +256,7 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
           </div>
 
           <div className="mt-8 flex items-center justify-between w-[80%] px-20">
-            <label className="flex items-center gap-3 text-[rgba(5,68,94,1)] text-lg">
+            {/* <label className="flex items-center gap-3 text-[rgba(5,68,94,1)] text-lg">
               <input
                 type="checkbox"
                 checked={showDiagrams}
@@ -264,7 +264,7 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
                 className="h-5 w-5 rounded border-gray-300"
               />
               Diagrams
-            </label>
+            </label> */}
             <button
               disabled={!hasCheckedMeasures()}
               onClick={handleProceedCalculations}

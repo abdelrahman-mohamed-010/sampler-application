@@ -6,13 +6,13 @@ import CreatePage from "./CreatePage";
 import { useState } from "react";
 import PopulationHomogeneity from "./PopulationHomogeneity";
 import { useSelector, useDispatch } from "react-redux";
-import * as XLSX from "xlsx";
 import { updateActiveTable } from "../redux/tableSlice";
 import RandomSampleModal from "./RandomSampleModal"; // new import
 import FixedStepModal from "./FixedStepModal"; // Add this import at the top
 import VariableStepModal from "./VariableStepModal"; // Import the new VariableStepModal
 import WeightedRandomModal from "./WeightedRandomModal"; // new import
 import BlockSelectionModal from "./BlockSelectionModal"; // Add import at the top
+import ExportModal from "./ExportModal"; // new import
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
@@ -22,6 +22,7 @@ const Menu = ({ isEditable = true }) => {
   const [showVariableStepModal, setShowVariableStepModal] = useState(false); // Add state for variable step modal
   const [showWeightedRandomModal, setShowWeightedRandomModal] = useState(false); // new state
   const [showBlockSelectionModal, setShowBlockSelectionModal] = useState(false); // Add state
+  const [showExportModal, setShowExportModal] = useState(false); // new state
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
@@ -41,14 +42,7 @@ const Menu = ({ isEditable = true }) => {
   ];
 
   const handleExportData = () => {
-    // Minimal example for creating an Excel file
-    const workbook = XLSX.utils.book_new();
-    Object.keys(activeTable.data).forEach((sheetName) => {
-      const sheetData = activeTable.data[sheetName];
-      const worksheet = XLSX.utils.json_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-    });
-    XLSX.writeFile(workbook, "table-data.xlsx");
+    setShowExportModal(true);
   };
 
   const handleSortBySelect = (option) => {
@@ -73,7 +67,8 @@ const Menu = ({ isEditable = true }) => {
     dispatch(updateActiveTable({ data: newData }));
   };
 
-  const handleSampleSelect = (option) => { // new handler
+  const handleSampleSelect = (option) => {
+    // new handler
     if (option.value === "Random Sample") {
       setShowRandomSampleModal(true);
     } else if (option.value === "Fixed Step") {
@@ -105,7 +100,9 @@ const Menu = ({ isEditable = true }) => {
       )}
       {showPopulationModal && (
         <Modal open={showPopulationModal}>
-          <PopulationHomogeneity onClose={() => setShowPopulationModal(false)} />
+          <PopulationHomogeneity
+            onClose={() => setShowPopulationModal(false)}
+          />
         </Modal>
       )}
       {showRandomSampleModal && ( // new modal rendering
@@ -125,13 +122,20 @@ const Menu = ({ isEditable = true }) => {
       )}
       {showWeightedRandomModal && (
         <Modal open={showWeightedRandomModal}>
-          <WeightedRandomModal onClose={() => setShowWeightedRandomModal(false)} />
+          <WeightedRandomModal
+            onClose={() => setShowWeightedRandomModal(false)}
+          />
         </Modal>
       )}
       {showBlockSelectionModal && (
         <Modal open={showBlockSelectionModal}>
-          <BlockSelectionModal onClose={() => setShowBlockSelectionModal(false)} />
+          <BlockSelectionModal
+            onClose={() => setShowBlockSelectionModal(false)}
+          />
         </Modal>
+      )}
+      {showExportModal && (
+        <ExportModal onClose={() => setShowExportModal(false)} />
       )}
       <div
         className={`filter h-[138px] shadow-lg flex px-4 gap-4 justify-center items-center ${

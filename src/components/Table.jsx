@@ -68,8 +68,8 @@ const Table = ({ isEditable }) => {
                 onClick={
                   !isEditable ? () => setActivePage(sheetName) : undefined
                 }
-                className={`h-[62px] flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
-                  ${!isEditable ? "cursor-pointer" : "cursor-default"}
+                className={`h-[72px] flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
+                  ${!isEditable ? "cursor-pointer" : "cursor-default "}
                   ${
                     activePage === sheetName
                       ? `${
