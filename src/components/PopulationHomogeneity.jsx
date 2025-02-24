@@ -12,73 +12,116 @@ const PopulationHomogeneity = ({ onClose }) => {
     (state) => state.tables?.activeTable || { data: {} }
   );
   const sheets = Object.keys(activeTable.data || {});
- console.log(activeTable);
+  console.log(activeTable);
   const [cv, setCv] = useState("50");
   const [maxCv, setMaxCv] = useState("40");
   const [showInfo, setShowInfo] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Helper to get sheet key with AMOUNT column
+  const getSheetWithAmount = () => {
+    const sheets = Object.keys(activeTable.data || {});
+    return (
+      sheets.find((sheet) => {
+        const data = activeTable.data[sheet];
+        return (
+          Array.isArray(data) &&
+          data.length > 0 &&
+          data[0].hasOwnProperty("AMOUNT")
+        );
+      }) || "FORMA"
+    );
+  };
+
+  const sheetKey = getSheetWithAmount();
+  const sheetData = activeTable.data[sheetKey];
+
+  // Modified CV calculation to use absolute AMOUNT values
   const calculateCV = (data) => {
     if (!data || data.length === 0) return 0;
-    
-    // Extract AMOUNT values
-    const amounts = data.map(item => parseFloat(item.AMOUNT)).filter(amount => !isNaN(amount));
-    
+
+    // Extract absolute AMOUNT values
+    const amounts = data
+      .map((item) => Math.abs(parseFloat(item.AMOUNT)))
+      .filter((amount) => !isNaN(amount));
     if (amounts.length === 0) return 0;
-    
+
     // Calculate mean
     const mean = amounts.reduce((sum, val) => sum + val, 0) / amounts.length;
-    
+
     // Calculate standard deviation
-    const variance = amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / amounts.length;
+    const variance =
+      amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+      amounts.length;
     const standardDeviation = Math.sqrt(variance);
-    
+
     // Calculate CV (Coefficient of Variation)
-    const cv = (standardDeviation / Math.abs(mean)) * 100;
-    
+    const cv = (standardDeviation / mean) * 100;
+
     return cv.toFixed(2);
   };
 
   // Calculate overall population CV
-  const overallCV = calculateCV(activeTable.data.FORMA);
+  const overallCV = calculateCV(sheetData);
 
+  // Modified handleProceed to sort data and extract maximum contiguous subpopulations
   const handleProceed = () => {
     try {
-      const formaData = activeTable.data.FORMA;
-      const subpopulations = [];
-      let startIndex = 0;
+      const formaData = sheetData;
+      // Step 3: Sort rows based on the absolute AMOUNT (ascending)
+      const sortedData = [...formaData].sort(
+        (a, b) =>
+          Math.abs(parseFloat(a.AMOUNT)) - Math.abs(parseFloat(b.AMOUNT))
+      );
+      // Recalculate overall population CV with sorted data
+      const overallCV = calculateCV(sortedData);
+      let subpopulations = [];
 
-      while (startIndex < formaData.length) {
-        let endIndex = startIndex + 99; // Start with chunk size of 100
-        if (endIndex > formaData.length) endIndex = formaData.length;
-
-        let chunk = formaData.slice(startIndex, endIndex);
-        let chunkCV = calculateCV(chunk);
-
-        // If chunk CV exceeds max CV, reduce chunk size
-        while (chunkCV > parseFloat(maxCv) && endIndex > startIndex + 1) {
-          endIndex -= 1;
-          chunk = formaData.slice(startIndex, endIndex);
-          chunkCV = calculateCV(chunk);
-        }
-
+      if (parseFloat(overallCV) <= parseFloat(maxCv)) {
+        // If overall CV meets criteria, use the entire sorted data as one subsample.
         subpopulations.push({
-          start: startIndex,
-          end: endIndex - 1,
-          cv: chunkCV
+          start: 0,
+          end: sortedData.length - 1,
+          cv: overallCV,
         });
-
-        startIndex = endIndex;
+      } else {
+        let startIndex = 0;
+        while (startIndex < sortedData.length) {
+          let endIndex = startIndex;
+          let candidate = [sortedData[startIndex]];
+          // Expand the candidate group until adding the next row causes CV to exceed the maximum acceptable value
+          while (endIndex + 1 < sortedData.length) {
+            const nextCandidate = [...candidate, sortedData[endIndex + 1]];
+            const candidateCV = calculateCV(nextCandidate);
+            if (parseFloat(candidateCV) <= parseFloat(maxCv)) {
+              candidate.push(sortedData[endIndex + 1]);
+              endIndex++;
+            } else {
+              break;
+            }
+          }
+          subpopulations.push({
+            start: startIndex,
+            end: endIndex,
+            cv: calculateCV(candidate),
+          });
+          startIndex = endIndex + 1;
+        }
       }
 
+      // Update activeTable with sorted sheet data and subpopulations
       const updatedTable = {
         ...activeTable,
+        data: {
+          ...activeTable.data,
+          [sheetKey]: sortedData,
+        },
         cv: parseFloat(overallCV),
         maxCv: parseFloat(maxCv),
-        subpopulations
+        subpopulations,
       };
-      
+
       dispatch(updateActiveTable(updatedTable));
       setShowInfo(true);
       setSuccess("CV values calculated and subsamples created successfully!");
@@ -92,7 +135,7 @@ const PopulationHomogeneity = ({ onClose }) => {
   const handleExtract = () => {
     try {
       // Access FORMA data directly from activeTable
-      const formaData = activeTable.data.FORMA;
+      const formaData = sheetData;
       if (!formaData || !activeTable.subpopulations) {
         setError("No data available to extract. Please click PROCEED first.");
         return;
@@ -101,10 +144,10 @@ const PopulationHomogeneity = ({ onClose }) => {
       const newSheetData = [];
 
       // Extract data from subpopulations that meet CV criteria
-      activeTable.subpopulations.forEach(subpop => {
+      activeTable.subpopulations.forEach((subpop) => {
         const subpopCV = parseFloat(subpop.cv);
         const maxAcceptableCV = parseFloat(maxCv);
-        
+
         if (subpopCV <= maxAcceptableCV) {
           const subpopData = formaData.slice(subpop.start, subpop.end + 1);
           newSheetData.push(...subpopData);
@@ -116,21 +159,20 @@ const PopulationHomogeneity = ({ onClose }) => {
         return;
       }
 
-
       const newSheetName = `Page ${Object.keys(activeTable.data).length + 1}`;
       const updatedTable = {
         ...activeTable,
         data: {
           ...activeTable.data,
-          [newSheetName]: newSheetData
-        }
+          [newSheetName]: newSheetData,
+        },
       };
 
       dispatch(updateActiveTable(updatedTable));
       setSuccess(`Extracted ${newSheetData.length} records to ${newSheetName}`);
       setTimeout(() => onClose(), 1500);
     } catch (err) {
-      console.error('Extract error:', err);
+      console.error("Extract error:", err);
       setError("Error extracting data: " + err.message);
     }
   };
@@ -153,14 +195,10 @@ const PopulationHomogeneity = ({ onClose }) => {
         </h1>
 
         {error && (
-          <div className="text-[#C63232] text-sm text-center">
-            {error}
-          </div>
+          <div className="text-[#C63232] text-sm text-center">{error}</div>
         )}
         {success && (
-          <div className="text-green-600 text-sm text-center">
-            {success}
-          </div>
+          <div className="text-green-600 text-sm text-center">{success}</div>
         )}
 
         <div className="flex items-center justify-center space-x-4">
@@ -209,11 +247,12 @@ const PopulationHomogeneity = ({ onClose }) => {
                   key={index}
                   className={`border p-3 text-center font-medium ${
                     parseFloat(subpop.cv) <= parseFloat(maxCv)
-                      ? 'border-green-600 text-green-600'
-                      : 'border-[#C63232] text-[#C63232]'
+                      ? "border-green-600 text-green-600"
+                      : "border-[#C63232] text-[#C63232]"
                   }`}
                 >
-                  Subpopulation {index + 1} (Records {subpop.start}-{subpop.end}): CV = {subpop.cv}%
+                  Subpopulation {index + 1} (Records {subpop.start}-{subpop.end}
+                  ): CV = {subpop.cv}%
                 </div>
               ))}
             </div>
