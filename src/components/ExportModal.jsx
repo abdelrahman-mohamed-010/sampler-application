@@ -22,7 +22,11 @@ const ExportModal = ({ onClose }) => {
       const worksheet = XLSX.utils.json_to_sheet(sheetData);
       XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     });
-    XLSX.writeFile(workbook, "table-data.xlsx");
+    // Use activeTable.name as the file name if available, else fallback
+    const fileName = activeTable.name
+      ? `${activeTable.name.trim()}.xlsx`
+      : "table-data.xlsx";
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (

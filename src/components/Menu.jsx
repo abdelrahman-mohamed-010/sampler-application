@@ -39,6 +39,12 @@ const Menu = ({ isEditable = true }) => {
   const SortBy = [
     { value: "Newest", label: "Newest" },
     { value: "Oldest", label: "Oldest" },
+    // { value: "Amount coloumn", label: "Amount coloumn" },
+    // { value: "ENTRY NUMBER", label: "ENTRY NUMBER" },
+    { value: "Amount Highest", label: "Amount Highest" },
+    { value: "Amount Lowest", label: "Amount Lowest" },
+    { value: "Entry Number Highest", label: "Entry Number Highest" },
+    { value: "Entry Number Lowest", label: "Entry Number Lowest" },
   ];
 
   const handleExportData = () => {
@@ -62,6 +68,49 @@ const Menu = ({ isEditable = true }) => {
 
         // If newest is selected, reverse the array
         newData[sheet] = option.value === "Newest" ? sorted.reverse() : sorted;
+      }
+      if (option.value === "Amount coloumn") {
+        const sorted = [...newData[sheet]].sort(
+          (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "ENTRY NUMBER") {
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const numA =
+            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          const numB =
+            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          return numA - numB;
+        });
+        newData[sheet] = sorted;
+      } else if (option.value === "Amount Highest") {
+        const sorted = [...newData[sheet]].sort(
+          (a, b) => (b["AMOUNT"] || 0) - (a["AMOUNT"] || 0)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "Amount Lowest") {
+        const sorted = [...newData[sheet]].sort(
+          (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Number Highest") {
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const numA =
+            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          const numB =
+            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          return numB - numA;
+        });
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Number Lowest") {
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const numA =
+            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          const numB =
+            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          return numA - numB;
+        });
+        newData[sheet] = sorted;
       }
     });
     dispatch(updateActiveTable({ data: newData }));
@@ -144,7 +193,7 @@ const Menu = ({ isEditable = true }) => {
       >
         <button
           className={`
-          text-left ps-10 shadow-lg rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
+          text-left ps-5 shadow-lg rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
           ${
             isEditable
               ? "cursor-not-allowed text-gray-400"
@@ -154,7 +203,7 @@ const Menu = ({ isEditable = true }) => {
           disabled={isEditable}
           onClick={() => setShowModal(true)}
         >
-          Create Page
+          {/* Create Page */}Create Sub Sample
         </button>
 
         <CustomDropdown
@@ -181,7 +230,7 @@ const Menu = ({ isEditable = true }) => {
 
         <button
           className={`
-          text-left ps-10 shadow-lg text-nowrap rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
+          text-left ps-4 pr-4 shadow-lg text-nowrap rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
           ${
             isEditable
               ? "cursor-not-allowed text-gray-400"

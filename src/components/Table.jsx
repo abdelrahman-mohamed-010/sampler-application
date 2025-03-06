@@ -1,8 +1,10 @@
 /* eslint-disable react/prop-types */
 
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux"; // add useDispatch
 import { useState, useMemo } from "react";
 import ExtractDataModal from "./ExtractDataModal";
+import { updateActiveTable, deletePage } from "../redux/tableSlice";
+import { Trash2 } from "lucide-react";
 
 const Table = ({ isEditable }) => {
   const [showModal, setShowModal] = useState(false);
@@ -11,13 +13,15 @@ const Table = ({ isEditable }) => {
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
+  const dispatch = useDispatch(); // added dispatch
 
   const sheetNames = useMemo(() => {
     return activeTable.data ? Object.keys(activeTable.data) : [];
   }, [activeTable.data]);
 
+  // Initialize activePage from activeTable.activePage or first sheet
   const [activePage, setActivePage] = useState(
-    sheetNames.length > 0 ? sheetNames[0] : null
+    activeTable.activePage || (sheetNames.length > 0 ? sheetNames[0] : null)
   );
 
   const sheetData = useMemo(() => {
@@ -66,9 +70,14 @@ const Table = ({ isEditable }) => {
               <div
                 key={sheetName}
                 onClick={
-                  !isEditable ? () => setActivePage(sheetName) : undefined
+                  !isEditable
+                    ? () => {
+                        setActivePage(sheetName);
+                        dispatch(updateActiveTable({ activePage: sheetName }));
+                      }
+                    : undefined
                 }
-                className={`h-[72px] flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
+                className={`group relative h-[72px] flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
                   ${!isEditable ? "cursor-pointer" : "cursor-default "}
                   ${
                     activePage === sheetName
@@ -85,50 +94,69 @@ const Table = ({ isEditable }) => {
                 >
                   {sheetName}
                 </span>
-                <div className="h-full flex items-center bg-[#d7d4d4] px-4 ">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 60 60"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
+                <div className="flex items-center space-x-2 px-2">
+                  {/* Extract button */}
+                  <div className="h-full flex items-center bg-[#d7d4d4] px-2 rounded">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 60 60"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Set the sheet for extraction and open modal
+                        setExtractSheet(sheetName);
+                        setShowModal(true);
+                      }}
+                      className="cursor-pointer hover:opacity-80 "
+                    >
+                      <path
+                        d="M5 50H55"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M12.5 50V20.5C12.5 20.3674 12.5527 20.2402 12.6464 20.1464C12.7402 20.0527 12.8674 20 13 20H19.5C19.6326 20 19.7598 20.0527 19.8536 20.1464C19.9473 20.2402 20 20.3674 20 20.5V50"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M27.5 50V10.6667C27.5 10.2985 27.7238 10 28 10H34.5C34.7762 10 35 10.2985 35 10.6667V50"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M42.5 50V27.875C42.5 27.6679 42.7239 27.5 43 27.5H49.5C49.7761 27.5 50 27.6679 50 27.875V50"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  {/* Delete button */}
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Set the sheet for extraction and open modal
-                      setExtractSheet(sheetName);
-                      setShowModal(true);
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this page?"
+                        )
+                      ) {
+                        dispatch(deletePage({ pageName: sheetName }));
+                      }
                     }}
-                    className="cursor-pointer hover:opacity-80 "
+                    className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
                   >
-                    <path
-                      d="M5 50H55"
-                      stroke="white"
-                      strokeWidth="3.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12.5 50V20.5C12.5 20.3674 12.5527 20.2402 12.6464 20.1464C12.7402 20.0527 12.8674 20 13 20H19.5C19.6326 20 19.7598 20.0527 19.8536 20.1464C19.9473 20.2402 20 20.3674 20 20.5V50"
-                      stroke="white"
-                      strokeWidth="3.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M27.5 50V10.6667C27.5 10.2985 27.7238 10 28 10H34.5C34.7762 10 35 10.2985 35 10.6667V50"
-                      stroke="white"
-                      strokeWidth="3.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M42.5 50V27.875C42.5 27.6679 42.7239 27.5 43 27.5H49.5C49.7761 27.5 50 27.6679 50 27.875V50"
-                      stroke="white"
-                      strokeWidth="3.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             ))}

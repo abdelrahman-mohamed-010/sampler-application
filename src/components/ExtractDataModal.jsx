@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 
 const EXCLUDED_COLUMNS = ["ENTRY NUMBER", "NARRATION", "USER", "rowNum"];
 
+// Update MEASURE_OPTIONS to include "Max" and "Min"
 const MEASURE_OPTIONS = [
   { name: "Mean", checked: false },
   { name: "Variance", checked: false },
@@ -14,6 +15,8 @@ const MEASURE_OPTIONS = [
   { name: "CV", checked: false },
   { name: "Median", checked: false },
   { name: "Mode", checked: false },
+  { name: "Max", checked: false },
+  { name: "Min", checked: false },
 ];
 
 // Add helper functions for calculations
@@ -43,6 +46,10 @@ const calculateMode = (values) => {
   return maxCount;
 };
 
+// Add helper functions for Max and Min calculations
+const calculateMax = (nums) => Math.max(...nums);
+const calculateMin = (nums) => Math.min(...nums);
+
 // Updated utility function to only handle specific columns
 const getValidMeasures = (columnName) => {
   // Define specific columns that should have limited measures
@@ -54,6 +61,8 @@ const getValidMeasures = (columnName) => {
       CV: false,
       Median: false,
       Mode: true,
+      Max: false,
+      Min: false,
     },
     "ACCOUNT NAME": {
       Mean: false,
@@ -62,6 +71,8 @@ const getValidMeasures = (columnName) => {
       CV: false,
       Median: false,
       Mode: true,
+      Max: false,
+      Min: false,
     },
     "Entry Date": {
       Mean: false,
@@ -70,6 +81,8 @@ const getValidMeasures = (columnName) => {
       CV: false,
       Median: false,
       Mode: true,
+      Max: false,
+      Min: false,
     },
   };
 
@@ -86,6 +99,8 @@ const getValidMeasures = (columnName) => {
     CV: true,
     Median: true,
     Mode: true,
+    Max: true,
+    Min: true,
   };
 };
 
@@ -190,6 +205,18 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
               colResult["Mode"] =
                 colValues.length > 0 ? calculateMode(colValues) : "";
               break;
+            case "Max":
+              colResult["Max"] =
+                numericValues.length > 0
+                  ? calculateMax(numericValues).toFixed(2)
+                  : "";
+              break;
+            case "Min":
+              colResult["Min"] =
+                numericValues.length > 0
+                  ? calculateMin(numericValues).toFixed(2)
+                  : "";
+              break;
             default:
               break;
           }
@@ -214,7 +241,7 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
         />
         <div className="flex flex-col justify-center items-center">
           <h2 className="text-dark font-semibold mt-0 w-full text-center text-2xl mb-2">
-            Extract Data
+            Statistics
           </h2>
 
           <div className="flex flex-nowrap  mt-8 overflow-x-auto">
@@ -256,15 +283,6 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
           </div>
 
           <div className="mt-8 flex items-center justify-between w-[80%] px-20">
-            {/* <label className="flex items-center gap-3 text-[rgba(5,68,94,1)] text-lg">
-              <input
-                type="checkbox"
-                checked={showDiagrams}
-                onChange={(e) => setShowDiagrams(e.target.checked)}
-                className="h-5 w-5 rounded border-gray-300"
-              />
-              Diagrams
-            </label> */}
             <button
               disabled={!hasCheckedMeasures()}
               onClick={handleProceedCalculations}
@@ -290,6 +308,8 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
                 "CV",
                 "Median",
                 "Mode",
+                "Max",
+                "Min",
               ].filter((measure) =>
                 computedResults.some(
                   (result) =>
