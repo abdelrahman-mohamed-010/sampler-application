@@ -13,13 +13,12 @@ const PopulationHomogeneity = ({ onClose }) => {
   );
   const sheets = Object.keys(activeTable.data || {});
   console.log(activeTable);
-  const [cv, setCv] = useState("50");
   const [maxCv, setMaxCv] = useState("40");
   const [showInfo, setShowInfo] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Helper to get sheet key with AMOUNT column
+  // Helper to get sheet key with AMOUNT column (fallback)
   const getSheetWithAmount = () => {
     const sheets = Object.keys(activeTable.data || {});
     return (
@@ -34,8 +33,9 @@ const PopulationHomogeneity = ({ onClose }) => {
     );
   };
 
-  const sheetKey = getSheetWithAmount();
-  const sheetData = activeTable.data[sheetKey];
+  // Use the active page from Table, fallback to getSheetWithAmount if not set
+  const sheetKey = activeTable.activePage || getSheetWithAmount();
+  const sheetData = activeTable.data[sheetKey] || [];
 
   // Modified CV calculation to use absolute AMOUNT values
   const calculateCV = (data) => {
@@ -203,16 +203,6 @@ const PopulationHomogeneity = ({ onClose }) => {
 
         <div className="flex items-center justify-center space-x-4">
           <div className="flex items-center space-x-2">
-            <label className="text-[#003B5C] font-medium">CV(%):</label>
-            <input
-              type="text"
-              value={cv}
-              onChange={(e) => setCv(e.target.value)}
-              className="w-20 h-10 border border-gray-300 rounded px-3 bg-gray-100 text-center"
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
             <label className="text-[#003B5C] font-medium">
               Maximum Acceptable CV(%):
             </label>
@@ -222,13 +212,6 @@ const PopulationHomogeneity = ({ onClose }) => {
               onChange={(e) => setMaxCv(e.target.value)}
               className="w-20 h-10 border border-gray-300 rounded px-3 text-center"
             />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <label className="text-[#003B5C] font-medium">
-              Overall Population CV(%):
-            </label>
-            <span>{overallCV}%</span>
           </div>
 
           <button
@@ -257,17 +240,10 @@ const PopulationHomogeneity = ({ onClose }) => {
               ))}
             </div>
           ) : (
+            // Display only the active page information
             <div className="space-y-2">
-              {sheets.map((sheet, index) => (
-                <div
-                  key={index}
-                  className="border border-[#003B5C] p-3 text-center text-[#003B5C] font-medium"
-                >
-                  Subpopulation {sheet}
-                </div>
-              ))}
               <div className="border border-[#003B5C] p-3 text-center text-[#003B5C] font-medium">
-                ...
+                Active Page: {sheetKey}
               </div>
             </div>
           )}

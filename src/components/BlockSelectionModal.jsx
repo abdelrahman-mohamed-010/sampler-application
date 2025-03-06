@@ -324,7 +324,8 @@ export default function BlockSelectionModal({ onClose }) {
                   {randomSample.map((row, rowIndex) => (
                     <tr
                       key={rowIndex}
-                      className="h-10 hover:bg-gray-100 border-b border-dark"
+                      // Added red highlighting to selected rows
+                      className="h-10 hover:bg-gray-100 border-b border-dark bg-red-200"
                     >
                       <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
                         {rowIndex + 1}
