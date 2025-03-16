@@ -3,6 +3,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { updateActiveTable } from "../redux/tableSlice";
 import { useNavigate } from "react-router-dom";
 import Nav from "../components/Nav";
+import searchIcon from "../assets/images/search.png"; // added import for search icon
+import dropDownIcon from "../assets/images/DropDown.png"; // added import for dropdown icon
 
 const OpenFile = () => {
   const dispatch = useDispatch();
@@ -28,7 +30,7 @@ const OpenFile = () => {
         updateActiveTable({
           name: selectedFileDetails.name,
           data: selectedFileDetails.data,
-          isNew: false // Mark as existing so WorkFlow becomes non‑editable
+          isNew: false, // Mark as existing so WorkFlow becomes non‑editable
         })
       );
       navigate("/workFlow");
@@ -66,7 +68,7 @@ const OpenFile = () => {
           pl-[46px] outline-none"
           />
           <img
-            src="../../public/images/search.png"
+            src={searchIcon} // replaced direct path with import
             alt="Search Icon"
             className="absolute left-[10px] bottom-[20px]"
           />
@@ -83,7 +85,7 @@ const OpenFile = () => {
           </select>
           <img
             className="dropdown-icon absolute right-[16px] top-1/2 transform -translate-y-1/2 w-[19px] pointer-events-none"
-            src="../../public/images/DropDown.png"
+            src={dropDownIcon} // replaced direct path with import
             alt="Dropdown Icon"
           />
         </div>
