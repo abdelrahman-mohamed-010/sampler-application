@@ -88,6 +88,7 @@ const Table = ({ isEditable }) => {
                   }`}
               >
                 <span
+                  {...(sheetName.length > 4 ? { title: sheetName } : {})}
                   className={`text-center truncate max-w-[120px] ${getTextSizeClass(
                     sheetName
                   )}`}

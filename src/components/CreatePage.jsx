@@ -4,6 +4,7 @@ import { CircleX } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { updateActiveTable } from "../redux/tableSlice";
+import { Range, getTrackBackground } from "react-range"; // Import react-range
 
 const CreatePage = ({ onClose }) => {
   // Replace dummy with sheets from activeTable
@@ -15,16 +16,16 @@ const CreatePage = ({ onClose }) => {
 
   const sheets = Object.keys(activeTable.data || {});
 
-  // Updated filters state to include selected sheets
+  // Updated filters state to include min and max amount values
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
     NARRATION: "",
-    amountFrom: "",
-    amountTo: "",
+    amountFrom: -10000,
+    amountTo: 10000,
     selectedSheets: [],
     accountCode: "",
-    accountTitle: ""
+    accountTitle: "",
   });
 
   const [error, setError] = useState("");
@@ -34,11 +35,11 @@ const CreatePage = ({ onClose }) => {
 
   // Handle sheet selection
   const handleSheetSelection = (sheet) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       selectedSheets: prev.selectedSheets.includes(sheet)
-        ? prev.selectedSheets.filter(s => s !== sheet)
-        : [...prev.selectedSheets, sheet]
+        ? prev.selectedSheets.filter((s) => s !== sheet)
+        : [...prev.selectedSheets, sheet],
     }));
   };
 
@@ -50,6 +51,15 @@ const CreatePage = ({ onClose }) => {
     }));
   };
 
+  // Special handler for amount range sliders with react-range
+  const handleAmountRangeChange = (values) => {
+    setFilters((prev) => ({
+      ...prev,
+      amountFrom: values[0],
+      amountTo: values[1],
+    }));
+  };
+
   const handleSubmit = () => {
     if (filters.selectedSheets.length === 0) {
       setError("Please select at least one sheet");
@@ -58,36 +68,36 @@ const CreatePage = ({ onClose }) => {
 
     try {
       const newSheetData = [];
-      filters.selectedSheets.forEach(sheet => {
+      filters.selectedSheets.forEach((sheet) => {
         const sheetData = activeTable.data[sheet];
         if (!Array.isArray(sheetData)) return;
-        
-        sheetData.forEach(row => {
+
+        sheetData.forEach((row) => {
           if (!row) return;
-          
+
           // Date filtering
           const entryDate = new Date(row["Entry Date"]);
-          const startDate = filters.startDate ? new Date(filters.startDate) : null;
+          const startDate = filters.startDate
+            ? new Date(filters.startDate)
+            : null;
           const endDate = filters.endDate ? new Date(filters.endDate) : null;
-          const dateMatch = (!startDate || entryDate >= startDate) && 
-                          (!endDate || entryDate <= endDate);
+          const dateMatch =
+            (!startDate || entryDate >= startDate) &&
+            (!endDate || entryDate <= endDate);
 
           // Narration filtering
-          const narrationMatch = !filters.NARRATION || 
-            (row["NARRATION"] && row["NARRATION"].toString().toLowerCase().includes(filters.NARRATION.toLowerCase()));
+          const narrationMatch =
+            !filters.NARRATION ||
+            (row["NARRATION"] &&
+              row["NARRATION"]
+                .toString()
+                .toLowerCase()
+                .includes(filters.NARRATION.toLowerCase()));
 
-          // Amount filtering
+          // Amount filtering with min and max values
           const amount = parseFloat(row["AMOUNT"]);
-          const amountFrom = filters.amountFrom !== "" ? parseFloat(filters.amountFrom) : null;
-          const amountTo = filters.amountTo !== "" ? parseFloat(filters.amountTo) : null;
-          
-          // If amountFrom is 0 or positive, exclude negative numbers
-          const amountMatch = 
-            (!amountFrom && !amountTo) || // no filter applied
-            ((amountFrom === null || amount >= amountFrom) && 
-             (amountTo === null || amount <= amountTo) &&
-             // If range starts from 0 or positive, exclude negative numbers
-             (amountFrom === null || amountFrom < 0 || amount >= 0));
+          const amountMatch =
+            amount >= filters.amountFrom && amount <= filters.amountTo;
 
           // Account filtering
           const accountCodeMatch =
@@ -102,7 +112,13 @@ const CreatePage = ({ onClose }) => {
                 .toLowerCase()
                 .includes(filters.accountTitle.toLowerCase()));
 
-          if (dateMatch && narrationMatch && amountMatch && accountCodeMatch && accountTitleMatch) {
+          if (
+            dateMatch &&
+            narrationMatch &&
+            amountMatch &&
+            accountCodeMatch &&
+            accountTitleMatch
+          ) {
             const newRow = { ...row };
             newSheetData.push(newRow);
           }
@@ -119,14 +135,16 @@ const CreatePage = ({ onClose }) => {
         ...activeTable,
         data: {
           ...activeTable.data,
-          [newSheetName]: newSheetData
+          [newSheetName]: newSheetData,
         },
-        sheets: [...(activeTable.sheets || []), newSheetName]  // Add new sheet to sheets array
+        sheets: [...(activeTable.sheets || []), newSheetName], // Add new sheet to sheets array
       };
 
       console.log("New sheet data:", newSheetData); // For debugging
       dispatch(updateActiveTable(updatedTable));
-      setSuccess(`Sheet created successfully with ${newSheetData.length} rows!`);
+      setSuccess(
+        `Sheet created successfully with ${newSheetData.length} rows!`
+      );
       setTimeout(() => {
         onClose();
       }, 1000);
@@ -231,30 +249,108 @@ const CreatePage = ({ onClose }) => {
             />
           </div>
 
-          {/* Amount Range Filter */}
-          <div className="mb-4 flex  items-center gap-6">
-            <label className="block mb-2 font-semibold  text-dark text-xl">
-              Amount Range
+          {/* Amount Range with React Range - Fixed Version */}
+          <div className="mb-4 flex items-center gap-6">
+            <label className="block mb-2 font-semibold text-dark text-xl">
+              Amount:
             </label>
-            <div className="flex gap-4">
-              <span className="self-center font-semibold">from</span>
-              <input
-                type="number"
-                name="amountFrom"
-                value={filters.amountFrom}
-                onChange={handleFilterChange}
-                className=" rounded p-2 text-center w-[98px] h-[42px] border-2 border-primary"
-                placeholder="TYPE"
-              />
-              <span className="self-center font-semibold">to</span>
-              <input
-                type="number"
-                name="amountTo"
-                value={filters.amountTo}
-                onChange={handleFilterChange}
-                className=" rounded p-2 text-center  w-[98px] h-[42px] border-2 border-primary"
-                placeholder="TYPE"
-              />
+            <div className="flex flex-col w-full">
+              <div
+                style={{
+                  height: "60px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Range
+                  values={[filters.amountFrom, filters.amountTo]}
+                  step={100}
+                  min={-10000}
+                  max={10000}
+                  onChange={handleAmountRangeChange}
+                  renderTrack={({ props, children }) => (
+                    <div
+                      onMouseDown={props.onMouseDown}
+                      onTouchStart={props.onTouchStart}
+                      style={{
+                        ...props.style,
+                        height: "36px",
+                        display: "flex",
+                        width: "100%",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div
+                        ref={props.ref}
+                        style={{
+                          height: "8px",
+                          width: "100%",
+                          borderRadius: "4px",
+                          background: getTrackBackground({
+                            values: [filters.amountFrom, filters.amountTo],
+                            colors: ["#ccc", "#3B82F6", "#ccc"],
+                            min: -10000,
+                            max: 10000,
+                          }),
+                          alignSelf: "center",
+                        }}
+                      >
+                        {children}
+                      </div>
+                    </div>
+                  )}
+                  renderThumb={({ index, props, isDragged }) => (
+                    <div
+                      {...props}
+                      style={{
+                        ...props.style,
+                        height: "24px",
+                        width: "24px",
+                        borderRadius: "50%",
+                        backgroundColor: "#3B82F6",
+                        border: "3px solid white",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        boxShadow: "0px 2px 6px #AAA",
+                        outline: "none",
+                        zIndex: isDragged ? 3 : 2,
+                        cursor: "grab",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "-32px",
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: "12px",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          backgroundColor: "#3B82F6",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {index === 0 ? "Min: " : "Max: "}
+                        {props["aria-valuenow"]}
+                      </div>
+                    </div>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-between mt-4">
+                <span className="text-sm font-medium">-10k</span>
+                <div className="flex gap-10">
+                  <span className="text-sm font-medium">
+                    From: {filters.amountFrom}
+                  </span>
+                  <span className="text-sm font-medium">
+                    To: {filters.amountTo}
+                  </span>
+                </div>
+                <span className="text-sm font-medium">10k</span>
+              </div>
             </div>
           </div>
 
@@ -289,7 +385,7 @@ const CreatePage = ({ onClose }) => {
               {success}
             </div>
           )}
-          <button 
+          <button
             onClick={handleSubmit}
             className="font-semibold text-white bg-primary w-[671px] h-[45px] rounded-lg text-lg flex items-center justify-center py-3 px-6"
           >
@@ -301,4 +397,5 @@ const CreatePage = ({ onClose }) => {
   );
 };
 
+// Remove the old style element since we're using react-range now
 export default CreatePage;

@@ -91,14 +91,15 @@ export default function WeightedRandomModal({ onClose }) {
       let populationCopy = [...pop]; // shallow copy
       while (sample.length < size && populationCopy.length > 0) {
         const totalWeight = populationCopy.reduce(
-          (sum, row) => sum + (parseFloat(row["AMOUNT"]) || 1),
+          (sum, row) => sum + (Math.abs(parseFloat(row["AMOUNT"])) || 1),
           0
         );
         const r = Math.random() * totalWeight;
         let cumulative = 0,
           index = 0;
         for (; index < populationCopy.length; index++) {
-          cumulative += parseFloat(populationCopy[index]["AMOUNT"]) || 1;
+          cumulative +=
+            Math.abs(parseFloat(populationCopy[index]["AMOUNT"])) || 1;
           if (cumulative >= r) break;
         }
         const selected = populationCopy.splice(index, 1)[0];
@@ -215,7 +216,7 @@ export default function WeightedRandomModal({ onClose }) {
             onClick={handleProceed}
             className="rounded bg-[#19A7CE] px-8 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
           >
-            PROCEED
+            GENERATE
           </button>
         </div>
         {error && (
