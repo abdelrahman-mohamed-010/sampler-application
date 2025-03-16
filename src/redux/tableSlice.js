@@ -44,6 +44,28 @@ const tableSlice = createSlice({
     clearRandomSample: (state) => {
       state.randomSample = null;
     },
+    deletePage: (state, action) => {
+      const { pageName } = action.payload;
+      if (state.activeTable && state.activeTable.data) {
+        // Delete the page
+        delete state.activeTable.data[pageName];
+
+        // Update activePage if needed
+        if (state.activeTable.activePage === pageName) {
+          const remainingPages = Object.keys(state.activeTable.data);
+          state.activeTable.activePage = remainingPages[0] || null;
+        }
+
+        // Update in tables array
+        const index = state.tables.findIndex(
+          (table) => table.name === state.activeTable.name
+        );
+        if (index >= 0) {
+          state.tables[index] = state.activeTable;
+        }
+        localStorage.setItem("savedTables", JSON.stringify(state.tables));
+      }
+    },
   },
 });
 
@@ -55,6 +77,7 @@ export const {
   clearActiveTable,
   setRandomSample,
   clearRandomSample,
+  deletePage,
 } = tableSlice.actions;
 
 export default tableSlice.reducer;

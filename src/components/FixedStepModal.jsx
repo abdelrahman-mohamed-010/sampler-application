@@ -38,21 +38,25 @@ export default function FixedStepModal({ onClose }) {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleProceed = () => {
     if (!activeTable?.data) return;
-    
+
     if (!selectedSheet) {
       setError("Please select a sheet");
       return;
     }
 
     const sheetData = activeTable.data[selectedSheet];
-    
-    if (!Array.isArray(sheetData) || sheetData.length === 0 || !Object.keys(sheetData[0]).includes("AMOUNT")) {
+
+    if (
+      !Array.isArray(sheetData) ||
+      sheetData.length === 0 ||
+      !Object.keys(sheetData[0]).includes("AMOUNT")
+    ) {
       setError("Selected sheet must have AMOUNT column");
       return;
     }
@@ -81,20 +85,20 @@ export default function FixedStepModal({ onClose }) {
       "ENTRY NUMBER",
       "NARRATION",
       "AMOUNT",
-      "USER"
+      "USER",
     ];
 
     // Select rows using fixed step sampling
     let currentIndex = startingRow - 1;
     while (sample.length < sampleSize && currentIndex < totalRows) {
       const selectedRow = sheetData[currentIndex];
-      
+
       // Format the row with standard columns
       const formattedRow = {};
-      standardColumns.forEach(column => {
-        formattedRow[column] = selectedRow[column] || '';
+      standardColumns.forEach((column) => {
+        formattedRow[column] = selectedRow[column] || "";
       });
-      
+
       sample.push(formattedRow);
       currentIndex += stepSize;
     }
@@ -117,7 +121,7 @@ export default function FixedStepModal({ onClose }) {
 
     try {
       const newSheetName = pageName.trim();
-      
+
       if (activeTable.data[newSheetName]) {
         setError("Page name already exists");
         return;
@@ -127,9 +131,9 @@ export default function FixedStepModal({ onClose }) {
         ...activeTable,
         data: {
           ...activeTable.data,
-          [newSheetName]: randomSample
+          [newSheetName]: randomSample,
         },
-        sheets: [...(activeTable.sheets || []), newSheetName]
+        sheets: [...(activeTable.sheets || []), newSheetName],
       };
 
       dispatch(updateActiveTable(updatedTable));
@@ -207,7 +211,9 @@ export default function FixedStepModal({ onClose }) {
 
             {/* Start Row Input */}
             <div className="flex items-center gap-2">
-              <span className="text-dark font-semibold text-lg">Row:</span>
+              <span className="text-dark font-semibold text-lg">
+                Starting Row:
+              </span>
               <input
                 type="number"
                 value={startingRow}
@@ -222,7 +228,7 @@ export default function FixedStepModal({ onClose }) {
             onClick={handleProceed}
             className="rounded bg-[#19A7CE] px-8 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
           >
-            PROCEED
+            GENERATE
           </button>
         </div>
 
@@ -238,18 +244,51 @@ export default function FixedStepModal({ onClose }) {
               <table className="w-full border-collapse table-fixed">
                 <thead className="sticky top-0">
                   <tr className="bg-dark text-white h-12">
-                    <th className="font-semibold w-[5%] border-r border-white text-[14px]">Line</th>
-                    {["ACOUNT CODE", "ACCOUNT NAME", "Entry Date", "ENTRY NUMBER", "NARRATION", "AMOUNT", "USER"].map((header, idx) => (
-                      <th key={idx} className="font-semibold w-[13%] border-r border-white text-[14px] px-2">{header}</th>
+                    <th className="font-semibold w-[5%] border-r border-white text-[14px]">
+                      Line
+                    </th>
+                    {[
+                      "ACOUNT CODE",
+                      "ACCOUNT NAME",
+                      "Entry Date",
+                      "ENTRY NUMBER",
+                      "NARRATION",
+                      "AMOUNT",
+                      "USER",
+                    ].map((header, idx) => (
+                      <th
+                        key={idx}
+                        className="font-semibold w-[13%] border-r border-white text-[14px] px-2"
+                      >
+                        {header}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {randomSample.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="h-10 hover:bg-gray-100 border-b border-dark">
-                      <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">{rowIndex + 1}</td>
-                      {["ACOUNT CODE", "ACCOUNT NAME", "Entry Date", "ENTRY NUMBER", "NARRATION", "AMOUNT", "USER"].map((column, colIndex) => (
-                        <td key={colIndex} className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate" title={row[column]}>
+                    <tr
+                      key={rowIndex}
+                      // Added red highlighting with bg-red-200
+                      className="h-10 hover:bg-gray-100 border-b border-dark bg-red-200"
+                    >
+                      <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
+                        {rowIndex + 1}
+                      </td>
+                      {[
+                        "ACOUNT CODE",
+                        "ACCOUNT NAME",
+                        "Entry Date",
+                        "ENTRY NUMBER",
+                        "NARRATION",
+                        "AMOUNT",
+                        "USER",
+                      ].map((column, colIndex) => (
+                        <td
+                          key={colIndex}
+                          className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
+                          title={row[column]}
+                        >
                           {row[column]}
                         </td>
                       ))}

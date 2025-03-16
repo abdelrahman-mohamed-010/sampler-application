@@ -6,13 +6,13 @@ import CreatePage from "./CreatePage";
 import { useState } from "react";
 import PopulationHomogeneity from "./PopulationHomogeneity";
 import { useSelector, useDispatch } from "react-redux";
-import * as XLSX from "xlsx";
 import { updateActiveTable } from "../redux/tableSlice";
 import RandomSampleModal from "./RandomSampleModal"; // new import
 import FixedStepModal from "./FixedStepModal"; // Add this import at the top
 import VariableStepModal from "./VariableStepModal"; // Import the new VariableStepModal
 import WeightedRandomModal from "./WeightedRandomModal"; // new import
 import BlockSelectionModal from "./BlockSelectionModal"; // Add import at the top
+import ExportModal from "./ExportModal"; // new import
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
@@ -22,6 +22,7 @@ const Menu = ({ isEditable = true }) => {
   const [showVariableStepModal, setShowVariableStepModal] = useState(false); // Add state for variable step modal
   const [showWeightedRandomModal, setShowWeightedRandomModal] = useState(false); // new state
   const [showBlockSelectionModal, setShowBlockSelectionModal] = useState(false); // Add state
+  const [showExportModal, setShowExportModal] = useState(false); // new state
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
@@ -36,44 +37,139 @@ const Menu = ({ isEditable = true }) => {
   ];
 
   const SortBy = [
-    { value: "Newest", label: "Newest" },
-    { value: "Oldest", label: "Oldest" },
+    { value: "Entry Date: Old to New", label: "Entry Date: Old to New" },
+    { value: "Entry Date: New to Old", label: "Entry Date: New to Old" },
+    { value: "Amount: Descending", label: "Amount: Descending" },
+    { value: "Amount: Ascending", label: "Amount: Ascending" },
+    { value: "Entry Number Highest", label: "Entry Number Highest" },
+    { value: "Entry Number Lowest", label: "Entry Number Lowest" },
+    { value: "NARRATION: A to Z", label: "NARRATION: A to Z" }, // new option
+    { value: "NARRATION: Z to A", label: "NARRATION: Z to A" }, // new option
+    { value: "Entry Name: A to Z", label: "Entry Name: A to Z" }, // new option
+    { value: "Entry Name: Z to A", label: "Entry Name: Z to A" }, // new option
   ];
 
   const handleExportData = () => {
-    // Minimal example for creating an Excel file
-    const workbook = XLSX.utils.book_new();
-    Object.keys(activeTable.data).forEach((sheetName) => {
-      const sheetData = activeTable.data[sheetName];
-      const worksheet = XLSX.utils.json_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-    });
-    XLSX.writeFile(workbook, "table-data.xlsx");
+    setShowExportModal(true);
   };
 
   const handleSortBySelect = (option) => {
     if (!activeTable?.data) return;
     const newData = { ...activeTable.data };
+
+    // Helper comparator for NARRATION sorting handling empty cells
+    const compareNarration = (a, b, ascending = true) => {
+      const narrA = a["NARRATION"] || "";
+      const narrB = b["NARRATION"] || "";
+      if (narrA === "" && narrB === "") return 0;
+      if (narrA === "") return ascending ? 1 : -1;
+      if (narrB === "") return ascending ? -1 : 1;
+      return ascending
+        ? narrA.localeCompare(narrB)
+        : narrB.localeCompare(narrA);
+    };
+
+    // New comparator for ACCOUNT NAME sorting
+    const compareAccountName = (a, b, ascending = true) => {
+      const acctA = a["ACCOUNT NAME"] || "";
+      const acctB = b["ACCOUNT NAME"] || "";
+      if (acctA === "" && acctB === "") return 0;
+      if (acctA === "") return ascending ? 1 : -1;
+      if (acctB === "") return ascending ? -1 : 1;
+      return ascending
+        ? acctA.localeCompare(acctB)
+        : acctB.localeCompare(acctA);
+    };
+
     Object.keys(newData).forEach((sheet) => {
       if (
+        option.value.startsWith("Entry Date") &&
         newData[sheet].length > 0 &&
         Object.hasOwn(newData[sheet][0], "Entry Date")
       ) {
-        // Always sort oldest first
+        // Sort by Entry Date
         const sorted = [...newData[sheet]].sort((a, b) => {
           const dateA = parseDate(a["Entry Date"]);
           const dateB = parseDate(b["Entry Date"]);
           return dateA - dateB;
         });
-
-        // If newest is selected, reverse the array
-        newData[sheet] = option.value === "Newest" ? sorted.reverse() : sorted;
+        newData[sheet] =
+          option.value === "Entry Date: New to Old" ? sorted.reverse() : sorted;
+      } else if (option.value === "Amount coloumn") {
+        const sorted = [...newData[sheet]].sort(
+          (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "ENTRY NUMBER") {
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const numA =
+            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          const numB =
+            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          return numA - numB;
+        });
+        newData[sheet] = sorted;
+      } else if (option.value === "Amount: Descending") {
+        const sorted = [...newData[sheet]].sort(
+          (a, b) => (b["AMOUNT"] || 0) - (a["AMOUNT"] || 0)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "Amount: Ascending") {
+        const sorted = [...newData[sheet]].sort(
+          (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Number Highest") {
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const numA =
+            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          const numB =
+            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          return numB - numA;
+        });
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Number Lowest") {
+        const sorted = [...newData[sheet]].sort((a, b) => {
+          const numA =
+            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          const numB =
+            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+          return numA - numB;
+        });
+        newData[sheet] = sorted;
+      } else if (option.value === "NARRATION: A to Z") {
+        // new block for A to Z
+        const sorted = [...newData[sheet]].sort((a, b) =>
+          compareNarration(a, b, true)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "NARRATION: Z to A") {
+        // updated block for Z to A: filter out empty cells first
+        const filtered = [...newData[sheet]].filter(
+          (row) => (row["NARRATION"] || "").trim() !== ""
+        );
+        const sorted = filtered.sort((a, b) => compareNarration(a, b, false));
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Name: A to Z") {
+        // new block for sorting ACCOUNT NAME in ascending order
+        const sorted = [...newData[sheet]].sort((a, b) =>
+          compareAccountName(a, b, true)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Name: Z to A") {
+        // new block for sorting ACCOUNT NAME in descending order with filtering empty cells first
+        const filtered = [...newData[sheet]].filter(
+          (row) => (row["ACCOUNT NAME"] || "").trim() !== ""
+        );
+        const sorted = filtered.sort((a, b) => compareAccountName(a, b, false));
+        newData[sheet] = sorted;
       }
     });
     dispatch(updateActiveTable({ data: newData }));
   };
 
-  const handleSampleSelect = (option) => { // new handler
+  const handleSampleSelect = (option) => {
+    // new handler
     if (option.value === "Random Sample") {
       setShowRandomSampleModal(true);
     } else if (option.value === "Fixed Step") {
@@ -105,7 +201,9 @@ const Menu = ({ isEditable = true }) => {
       )}
       {showPopulationModal && (
         <Modal open={showPopulationModal}>
-          <PopulationHomogeneity onClose={() => setShowPopulationModal(false)} />
+          <PopulationHomogeneity
+            onClose={() => setShowPopulationModal(false)}
+          />
         </Modal>
       )}
       {showRandomSampleModal && ( // new modal rendering
@@ -125,13 +223,20 @@ const Menu = ({ isEditable = true }) => {
       )}
       {showWeightedRandomModal && (
         <Modal open={showWeightedRandomModal}>
-          <WeightedRandomModal onClose={() => setShowWeightedRandomModal(false)} />
+          <WeightedRandomModal
+            onClose={() => setShowWeightedRandomModal(false)}
+          />
         </Modal>
       )}
       {showBlockSelectionModal && (
         <Modal open={showBlockSelectionModal}>
-          <BlockSelectionModal onClose={() => setShowBlockSelectionModal(false)} />
+          <BlockSelectionModal
+            onClose={() => setShowBlockSelectionModal(false)}
+          />
         </Modal>
+      )}
+      {showExportModal && (
+        <ExportModal onClose={() => setShowExportModal(false)} />
       )}
       <div
         className={`filter h-[138px] shadow-lg flex px-4 gap-4 justify-center items-center ${
@@ -140,7 +245,7 @@ const Menu = ({ isEditable = true }) => {
       >
         <button
           className={`
-          text-left ps-10 shadow-lg rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
+          text-left ps-5 shadow-lg rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
           ${
             isEditable
               ? "cursor-not-allowed text-gray-400"
@@ -150,7 +255,7 @@ const Menu = ({ isEditable = true }) => {
           disabled={isEditable}
           onClick={() => setShowModal(true)}
         >
-          Create Page
+          {/* Create Page */}Create Sub Sample
         </button>
 
         <CustomDropdown
@@ -177,7 +282,7 @@ const Menu = ({ isEditable = true }) => {
 
         <button
           className={`
-          text-left ps-10 shadow-lg text-nowrap rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
+          text-left ps-4 pr-4 shadow-lg text-nowrap rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
           ${
             isEditable
               ? "cursor-not-allowed text-gray-400"
