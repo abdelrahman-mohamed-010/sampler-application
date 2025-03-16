@@ -37,14 +37,16 @@ const Menu = ({ isEditable = true }) => {
   ];
 
   const SortBy = [
-    { value: "Newest", label: "Newest" },
-    { value: "Oldest", label: "Oldest" },
-    // { value: "Amount coloumn", label: "Amount coloumn" },
-    // { value: "ENTRY NUMBER", label: "ENTRY NUMBER" },
-    { value: "Amount Highest", label: "Amount Highest" },
-    { value: "Amount Lowest", label: "Amount Lowest" },
+    { value: "Entry Date: Old to New", label: "Entry Date: Old to New" },
+    { value: "Entry Date: New to Old", label: "Entry Date: New to Old" },
+    { value: "Amount: Descending", label: "Amount: Descending" },
+    { value: "Amount: Ascending", label: "Amount: Ascending" },
     { value: "Entry Number Highest", label: "Entry Number Highest" },
     { value: "Entry Number Lowest", label: "Entry Number Lowest" },
+    { value: "NARRATION: A to Z", label: "NARRATION: A to Z" }, // new option
+    { value: "NARRATION: Z to A", label: "NARRATION: Z to A" }, // new option
+    { value: "Entry Name: A to Z", label: "Entry Name: A to Z" }, // new option
+    { value: "Entry Name: Z to A", label: "Entry Name: Z to A" }, // new option
   ];
 
   const handleExportData = () => {
@@ -54,22 +56,46 @@ const Menu = ({ isEditable = true }) => {
   const handleSortBySelect = (option) => {
     if (!activeTable?.data) return;
     const newData = { ...activeTable.data };
+
+    // Helper comparator for NARRATION sorting handling empty cells
+    const compareNarration = (a, b, ascending = true) => {
+      const narrA = a["NARRATION"] || "";
+      const narrB = b["NARRATION"] || "";
+      if (narrA === "" && narrB === "") return 0;
+      if (narrA === "") return ascending ? 1 : -1;
+      if (narrB === "") return ascending ? -1 : 1;
+      return ascending
+        ? narrA.localeCompare(narrB)
+        : narrB.localeCompare(narrA);
+    };
+
+    // New comparator for ACCOUNT NAME sorting
+    const compareAccountName = (a, b, ascending = true) => {
+      const acctA = a["ACCOUNT NAME"] || "";
+      const acctB = b["ACCOUNT NAME"] || "";
+      if (acctA === "" && acctB === "") return 0;
+      if (acctA === "") return ascending ? 1 : -1;
+      if (acctB === "") return ascending ? -1 : 1;
+      return ascending
+        ? acctA.localeCompare(acctB)
+        : acctB.localeCompare(acctA);
+    };
+
     Object.keys(newData).forEach((sheet) => {
       if (
+        option.value.startsWith("Entry Date") &&
         newData[sheet].length > 0 &&
         Object.hasOwn(newData[sheet][0], "Entry Date")
       ) {
-        // Always sort oldest first
+        // Sort by Entry Date
         const sorted = [...newData[sheet]].sort((a, b) => {
           const dateA = parseDate(a["Entry Date"]);
           const dateB = parseDate(b["Entry Date"]);
           return dateA - dateB;
         });
-
-        // If newest is selected, reverse the array
-        newData[sheet] = option.value === "Newest" ? sorted.reverse() : sorted;
-      }
-      if (option.value === "Amount coloumn") {
+        newData[sheet] =
+          option.value === "Entry Date: New to Old" ? sorted.reverse() : sorted;
+      } else if (option.value === "Amount coloumn") {
         const sorted = [...newData[sheet]].sort(
           (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
         );
@@ -83,12 +109,12 @@ const Menu = ({ isEditable = true }) => {
           return numA - numB;
         });
         newData[sheet] = sorted;
-      } else if (option.value === "Amount Highest") {
+      } else if (option.value === "Amount: Descending") {
         const sorted = [...newData[sheet]].sort(
           (a, b) => (b["AMOUNT"] || 0) - (a["AMOUNT"] || 0)
         );
         newData[sheet] = sorted;
-      } else if (option.value === "Amount Lowest") {
+      } else if (option.value === "Amount: Ascending") {
         const sorted = [...newData[sheet]].sort(
           (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
         );
@@ -110,6 +136,32 @@ const Menu = ({ isEditable = true }) => {
             parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
           return numA - numB;
         });
+        newData[sheet] = sorted;
+      } else if (option.value === "NARRATION: A to Z") {
+        // new block for A to Z
+        const sorted = [...newData[sheet]].sort((a, b) =>
+          compareNarration(a, b, true)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "NARRATION: Z to A") {
+        // updated block for Z to A: filter out empty cells first
+        const filtered = [...newData[sheet]].filter(
+          (row) => (row["NARRATION"] || "").trim() !== ""
+        );
+        const sorted = filtered.sort((a, b) => compareNarration(a, b, false));
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Name: A to Z") {
+        // new block for sorting ACCOUNT NAME in ascending order
+        const sorted = [...newData[sheet]].sort((a, b) =>
+          compareAccountName(a, b, true)
+        );
+        newData[sheet] = sorted;
+      } else if (option.value === "Entry Name: Z to A") {
+        // new block for sorting ACCOUNT NAME in descending order with filtering empty cells first
+        const filtered = [...newData[sheet]].filter(
+          (row) => (row["ACCOUNT NAME"] || "").trim() !== ""
+        );
+        const sorted = filtered.sort((a, b) => compareAccountName(a, b, false));
         newData[sheet] = sorted;
       }
     });

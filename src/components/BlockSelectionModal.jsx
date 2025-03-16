@@ -282,7 +282,7 @@ export default function BlockSelectionModal({ onClose }) {
             onClick={handleProceed}
             className="rounded bg-[#19A7CE] px-8 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
           >
-            PROCEED
+            GENERATE
           </button>
         </div>
         {error && (
@@ -321,34 +321,38 @@ export default function BlockSelectionModal({ onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {randomSample.map((row, rowIndex) => (
-                    <tr
-                      key={rowIndex}
-                      // Added red highlighting to selected rows
-                      className="h-10 hover:bg-gray-100 border-b border-dark bg-red-200"
-                    >
-                      <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
-                        {rowIndex + 1}
-                      </td>
-                      {[
-                        "ACOUNT CODE",
-                        "ACCOUNT NAME",
-                        "Entry Date",
-                        "ENTRY NUMBER",
-                        "NARRATION",
-                        "AMOUNT",
-                        "USER",
-                      ].map((column, colIndex) => (
-                        <td
-                          key={colIndex}
-                          className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
-                          title={row[column]}
-                        >
-                          {row[column]}
+                  {randomSample.map((row, rowIndex) => {
+                    const blockIndex = Math.floor(rowIndex / blockSize);
+                    const rowColor =
+                      blockIndex % 2 === 0 ? "bg-red-200" : "bg-blue-200";
+                    return (
+                      <tr
+                        key={rowIndex}
+                        className={`h-10 hover:bg-gray-100 border-b border-dark ${rowColor}`}
+                      >
+                        <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
+                          {rowIndex + 1}
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                        {[
+                          "ACOUNT CODE",
+                          "ACCOUNT NAME",
+                          "Entry Date",
+                          "ENTRY NUMBER",
+                          "NARRATION",
+                          "AMOUNT",
+                          "USER",
+                        ].map((column, colIndex) => (
+                          <td
+                            key={colIndex}
+                            className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
+                            title={row[column]}
+                          >
+                            {row[column]}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

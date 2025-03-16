@@ -228,7 +228,7 @@ export default function FixedStepModal({ onClose }) {
             onClick={handleProceed}
             className="rounded bg-[#19A7CE] px-8 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
           >
-            PROCEED
+            GENERATE
           </button>
         </div>
 
