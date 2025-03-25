@@ -12,6 +12,8 @@ export default function VariableStepModal({ onClose }) {
   const [error, setError] = useState("");
   const [pageName, setPageName] = useState("");
   const [success, setSuccess] = useState("");
+  const [showOnlySelected, setShowOnlySelected] = useState(false); // For isolate functionality
+  const [selectedIndices, setSelectedIndices] = useState([]); // Track selected row indices
   const dispatch = useDispatch();
   const activeTable = useSelector((state) => state.tables?.activeTable);
   const randomSample = useSelector((state) => state.tables?.randomSample);
@@ -29,6 +31,17 @@ export default function VariableStepModal({ onClose }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Get current sheet data (for validation and display)
+  const sheetData = selectedSheet ? activeTable.data[selectedSheet] || [] : [];
+  const totalRows = sheetData.length;
+
+  // Update starting row if it exceeds total rows
+  useEffect(() => {
+    if (startingRow > totalRows && totalRows > 0) {
+      setStartingRow(Math.min(startingRow, totalRows));
+    }
+  }, [totalRows, startingRow]);
+
   // Click outside handler for dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -38,6 +51,14 @@ export default function VariableStepModal({ onClose }) {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Add effect to disable body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, []);
 
   const handleProceed = () => {
@@ -57,15 +78,15 @@ export default function VariableStepModal({ onClose }) {
     }
     const totalRows = sheetData.length;
     if (sampleSize <= 0 || sampleSize >= totalRows) {
-      setError("Invalid sample size");
+      setError(`Sample size must be between 1 and ${totalRows - 1}`);
       return;
     }
     if (startingRow < 1 || startingRow > totalRows) {
-      setError("Invalid starting row");
+      setError(`Starting row must be between 1 and ${totalRows}`);
       return;
     }
 
-    // Select rows using variable step sampling (random steps)
+    // Select rows using variable step sampling with wrap-around logic
     const sample = [];
     const standardColumns = [
       "ACOUNT CODE",
@@ -76,23 +97,42 @@ export default function VariableStepModal({ onClose }) {
       "AMOUNT",
       "USER",
     ];
+
+    // Track which indices have been selected
+    const newSelectedIndices = [];
+    const selectedRows = new Set();
+
     let currentIndex = startingRow - 1;
-    while (sample.length < sampleSize && currentIndex < totalRows) {
-      const selectedRow = sheetData[currentIndex];
-      const formattedRow = {};
-      standardColumns.forEach((column) => {
-        formattedRow[column] = selectedRow[column] || "";
-      });
-      sample.push(formattedRow);
-      // Break if desired sample size is reached
-      if (sample.length === sampleSize) break;
-      // Generate a random step between 1 and 10
-      const randomStep = Math.floor(Math.random() * 10) + 1;
-      currentIndex += randomStep;
+
+    while (sample.length < sampleSize && selectedRows.size < totalRows) {
+      // If the current index hasn't been selected yet
+      if (!selectedRows.has(currentIndex)) {
+        const selectedRow = sheetData[currentIndex];
+        const formattedRow = {};
+        standardColumns.forEach((column) => {
+          formattedRow[column] = selectedRow[column] || "";
+        });
+
+        sample.push(formattedRow);
+        selectedRows.add(currentIndex);
+        newSelectedIndices.push(currentIndex);
+      }
+
+      // Break if we've gathered enough samples
+      if (sample.length >= sampleSize) break;
+
+      // Generate a random step between 1 and min(10, totalRows/2)
+      const maxStep = Math.min(10, Math.floor(totalRows / 2) || 1);
+      const randomStep = Math.floor(Math.random() * maxStep) + 1;
+
+      // Apply the step with wrap-around
+      currentIndex = (currentIndex + randomStep) % totalRows;
     }
 
+    setSelectedIndices(newSelectedIndices);
     dispatch(setRandomSample(sample));
     setExtracted(true);
+    setShowOnlySelected(false);
     setError("");
   };
 
@@ -131,10 +171,12 @@ export default function VariableStepModal({ onClose }) {
     }
   };
 
+  // Determine what data to display based on isolation mode
+  const displayData = showOnlySelected ? randomSample : sheetData;
+
   return (
-    // ...existing modal container code...
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-[1200px] rounded-[15px] bg-white p-8 shadow-lg">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 overflow-y-auto py-4">
+      <div className="relative w-full max-w-[1200px] rounded-[15px] bg-white p-8 shadow-lg my-auto">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-red-500 hover:text-red-700"
@@ -142,7 +184,7 @@ export default function VariableStepModal({ onClose }) {
           <CircleX />
         </button>
         <h2 className="mb-8 text-center text-2xl text-dark font-bold">
-          Variable Step Sample(Systamatic Selection)
+          Variable Step Sample (Systematic Selection)
         </h2>
         <div className="flex flex-col items-center gap-6 pb-7 border-dark border-b-2 w-[90%] mx-auto">
           {/* Dropdown, Sample Size, Start Row inputs */}
@@ -185,35 +227,70 @@ export default function VariableStepModal({ onClose }) {
                 value={sampleSize}
                 onChange={(e) => setSampleSize(parseInt(e.target.value) || 0)}
                 min="1"
+                max={totalRows > 0 ? totalRows - 1 : 1}
                 className="w-[80px] rounded border-2 border-primary px-2 py-1 text-center h-[42px]"
               />
+              {totalRows > 0 && (
+                <span className="text-sm text-gray-500">
+                  (Max: {totalRows - 1})
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-dark font-semibold text-lg">Row:</span>
               <input
                 type="number"
                 value={startingRow}
-                onChange={(e) => setStartingRow(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  // Validate starting row against total rows
+                  if (totalRows > 0) {
+                    setStartingRow(Math.min(Math.max(1, value), totalRows));
+                  } else {
+                    setStartingRow(value);
+                  }
+                }}
                 min="1"
+                max={totalRows || 1}
                 className="w-[80px] rounded border-2 border-primary px-2 py-1 text-center h-[42px]"
               />
+              {totalRows > 0 && (
+                <span className="text-sm text-gray-500">
+                  (Max: {totalRows})
+                </span>
+              )}
             </div>
           </div>
-          <button
-            onClick={handleProceed}
-            className="rounded bg-[#19A7CE] px-8 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
-          >
-            GENERATE
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleProceed}
+              disabled={!selectedSheet || totalRows === 0}
+              className={`rounded px-8 py-2 font-medium text-white h-[42px] ${
+                !selectedSheet || totalRows === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#19A7CE] hover:bg-[#1899BD]"
+              }`}
+            >
+              GENERATE
+            </button>
+
+            {extracted && randomSample && randomSample.length > 0 && (
+              <button
+                onClick={() => setShowOnlySelected(!showOnlySelected)}
+                className="rounded bg-orange-500 px-6 py-2 font-medium text-white hover:bg-orange-600 h-[42px]"
+              >
+                {showOnlySelected ? "SHOW ALL" : "ISOLATE"}
+              </button>
+            )}
+          </div>
         </div>
         {error && (
           <div className="mt-4 text-center text-red-500 font-medium">
             {error}
           </div>
         )}
-        {extracted && randomSample && (
+        {extracted && displayData && displayData.length > 0 && (
           <>
-            {/* Table rendering preview */}
             <div className="mt-6 max-h-[400px] overflow-y-auto">
               <table className="w-full border-collapse table-fixed">
                 <thead className="sticky top-0">
@@ -240,34 +317,42 @@ export default function VariableStepModal({ onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {randomSample.map((row, rowIndex) => (
-                    <tr
-                      key={rowIndex}
-                      // Added bg-red-200 to highlight selected rows
-                      className="h-10 hover:bg-gray-100 border-b border-dark bg-red-200"
-                    >
-                      <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
-                        {rowIndex + 1}
-                      </td>
-                      {[
-                        "ACOUNT CODE",
-                        "ACCOUNT NAME",
-                        "Entry Date",
-                        "ENTRY NUMBER",
-                        "NARRATION",
-                        "AMOUNT",
-                        "USER",
-                      ].map((column, colIndex) => (
-                        <td
-                          key={colIndex}
-                          className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
-                          title={row[column]}
-                        >
-                          {row[column]}
+                  {displayData.map((row, rowIndex) => {
+                    // Determine if this row should be highlighted
+                    const isSelected =
+                      showOnlySelected ||
+                      (selectedIndices.includes(rowIndex) && !showOnlySelected);
+
+                    return (
+                      <tr
+                        key={rowIndex}
+                        className={`h-10 hover:bg-gray-100 border-b border-dark ${
+                          isSelected ? "bg-red-200" : ""
+                        }`}
+                      >
+                        <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
+                          {rowIndex + 1}
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                        {[
+                          "ACOUNT CODE",
+                          "ACCOUNT NAME",
+                          "Entry Date",
+                          "ENTRY NUMBER",
+                          "NARRATION",
+                          "AMOUNT",
+                          "USER",
+                        ].map((column, colIndex) => (
+                          <td
+                            key={colIndex}
+                            className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
+                            title={row[column]}
+                          >
+                            {row[column]}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -300,6 +385,5 @@ export default function VariableStepModal({ onClose }) {
         )}
       </div>
     </div>
-    // ...existing modal container code...
   );
 }

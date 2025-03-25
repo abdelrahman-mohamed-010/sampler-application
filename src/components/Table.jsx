@@ -36,7 +36,8 @@ const Table = ({ isEditable }) => {
       : [];
   }, [sheetData]);
 
-  const totalRows = Math.max(sheetData.length, 10);
+  // Remove the totalRows forcing minimum of 10 - show actual rows only
+  const totalRows = sheetData.length;
 
   // Function to determine text size class based on text length
   const getTextSizeClass = (text) => {
@@ -44,6 +45,13 @@ const Table = ({ isEditable }) => {
     if (text.length > 15) return "text-sm";
     return "text-base";
   };
+
+  // Get the number of rows in the current active sheet for comparison
+  const activeSheetRowCount = useMemo(() => {
+    return activePage && activeTable.data
+      ? activeTable.data[activePage]?.length || 0
+      : 0;
+  }, [activePage, activeTable.data]);
 
   if (!activeTable || !activeTable.data || sheetNames.length === 0) {
     return (
@@ -161,12 +169,13 @@ const Table = ({ isEditable }) => {
                 </div>
               </div>
             ))}
+            {/* Add empty cells to match table row count */}
             {Array.from({
-              length: Math.max(0, totalRows - sheetNames.length),
+              length: Math.max(0, activeSheetRowCount - sheetNames.length),
             }).map((_, index) => (
               <div
-                key={`empty-sheet-${index}`}
-                className="h-[72px] flex items-center justify-center border-r border-b border-dark last:border-b-0"
+                key={`empty-${index}`}
+                className="h-[72px] border-r border-b border-dark"
               />
             ))}
           </div>
@@ -184,20 +193,31 @@ const Table = ({ isEditable }) => {
                 <th className="font-semibold w-12 border-r border-white text-[20px]">
                   Line
                 </th>
-                {columns.map((column, index) => (
-                  <th
-                    key={index}
-                    className="font-semibold border-r border-white last:border-r-0 text-[20px]"
-                  >
-                    <span
-                      className={`px-2 inline-block ${getTextSizeClass(
-                        column
-                      )}`}
+                {columns.map((column, index) => {
+                  const sheetSort =
+                    activeTable.sortedInfo && activeTable.sortedInfo[activePage]
+                      ? activeTable.sortedInfo[activePage]
+                      : null;
+                  return (
+                    <th
+                      key={index}
+                      className="font-semibold border-r border-white last:border-r-0 text-[20px]"
                     >
-                      {column}
-                    </span>
-                  </th>
-                ))}
+                      <span
+                        className={`px-2 inline-block ${getTextSizeClass(
+                          column
+                        )}`}
+                      >
+                        {column}
+                        {sheetSort && sheetSort.sortedColumn === column && (
+                          <span className="ml-1 text-yellow-500">
+                            {sheetSort.sortedOrder === "asc" ? "▲" : "▼"}
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -219,24 +239,7 @@ const Table = ({ isEditable }) => {
                   ))}
                 </tr>
               ))}
-              {Array.from({
-                length: Math.max(0, totalRows - sheetData.length),
-              }).map((_, index) => (
-                <tr
-                  key={`empty-${index}`}
-                  className="h-[72px] border-b border-dark last:border-b-0"
-                >
-                  <td className="px-16 text-[#05445e] font-normal border-r border-dark text-center">
-                    {sheetData.length + index + 1}
-                  </td>
-                  {columns.map((column, colIndex) => (
-                    <td
-                      key={colIndex}
-                      className="text-[#05445e] text-center font-normal border-r border-dark last:border-r-0"
-                    />
-                  ))}
-                </tr>
-              ))}
+              {/* Removed the empty rows padding section */}
             </tbody>
           </table>
         </div>

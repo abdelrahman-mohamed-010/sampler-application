@@ -3,8 +3,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { updateActiveTable } from "../redux/tableSlice";
 import { useNavigate } from "react-router-dom";
 import Nav from "../components/Nav";
-import searchIcon from "../assets/images/search.png"; // added import for search icon
-import dropDownIcon from "../assets/images/DropDown.png"; // added import for dropdown icon
+import searchIcon from "../../public/images/search.png"; // added import for search icon
+import dropDownIcon from "../../public/images/DropDown.png"; // added import for dropdown icon
 
 const OpenFile = () => {
   const dispatch = useDispatch();

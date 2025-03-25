@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
-import { CircleX, ChevronDown } from "lucide-react"; // Add ChevronDown import
-import { useState, useRef, useEffect } from "react"; // Add useRef and useEffect
+import { CircleX, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setRandomSample, updateActiveTable } from "../redux/tableSlice";
 
@@ -12,6 +12,8 @@ export default function FixedStepModal({ onClose }) {
   const [error, setError] = useState("");
   const [pageName, setPageName] = useState("");
   const [success, setSuccess] = useState("");
+  const [showOnlySelected, setShowOnlySelected] = useState(false); // For isolate functionality
+  const [selectedIndices, setSelectedIndices] = useState([]); // Track selected row indices
   const dispatch = useDispatch();
   const activeTable = useSelector((state) => state.tables?.activeTable);
   const randomSample = useSelector((state) => state.tables?.randomSample);
@@ -30,6 +32,17 @@ export default function FixedStepModal({ onClose }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Current sheet data (for validation and display)
+  const sheetData = selectedSheet ? activeTable.data[selectedSheet] || [] : [];
+  const totalRows = sheetData.length;
+
+  // Update starting row if it exceeds total rows
+  useEffect(() => {
+    if (startingRow > totalRows && totalRows > 0) {
+      setStartingRow(Math.min(startingRow, totalRows));
+    }
+  }, [totalRows, startingRow]);
+
   // Add click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -40,6 +53,14 @@ export default function FixedStepModal({ onClose }) {
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Add effect to disable body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, []);
 
   const handleProceed = () => {
@@ -64,18 +85,19 @@ export default function FixedStepModal({ onClose }) {
     const totalRows = sheetData.length;
 
     if (sampleSize <= 0 || sampleSize >= totalRows) {
-      setError("Invalid sample size");
+      setError(`Invalid sample size. Must be between 1 and ${totalRows - 1}`);
       return;
     }
 
     if (startingRow < 1 || startingRow > totalRows) {
-      setError("Invalid starting row");
+      setError(`Starting row must be between 1 and ${totalRows}`);
       return;
     }
 
     // Calculate step size
     const stepSize = Math.floor(totalRows / sampleSize);
     const sample = [];
+    const newSelectedIndices = [];
 
     // Standard columns for consistency
     const standardColumns = [
@@ -92,6 +114,7 @@ export default function FixedStepModal({ onClose }) {
     let currentIndex = startingRow - 1;
     while (sample.length < sampleSize && currentIndex < totalRows) {
       const selectedRow = sheetData[currentIndex];
+      newSelectedIndices.push(currentIndex);
 
       // Format the row with standard columns
       const formattedRow = {};
@@ -103,8 +126,10 @@ export default function FixedStepModal({ onClose }) {
       currentIndex += stepSize;
     }
 
+    setSelectedIndices(newSelectedIndices);
     dispatch(setRandomSample(sample));
     setExtracted(true);
+    setShowOnlySelected(false); // Show all rows with highlighting
     setError("");
   };
 
@@ -147,9 +172,12 @@ export default function FixedStepModal({ onClose }) {
     }
   };
 
+  // Determine what data to display based on isolation mode
+  const displayData = showOnlySelected ? randomSample : sheetData;
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-[1200px] rounded-[15px] bg-white p-8 shadow-lg">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 overflow-y-auto py-4">
+      <div className="relative w-full max-w-[1200px] rounded-[15px] bg-white p-8 shadow-lg my-auto">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-red-500 hover:text-red-700"
@@ -205,11 +233,17 @@ export default function FixedStepModal({ onClose }) {
                 value={sampleSize}
                 onChange={(e) => setSampleSize(parseInt(e.target.value) || 0)}
                 min="1"
+                max={totalRows > 0 ? totalRows - 1 : 1}
                 className="w-[80px] rounded border-2 border-primary px-2 py-1 text-center h-[42px]"
               />
+              {totalRows > 0 && (
+                <span className="text-sm text-gray-500">
+                  (Max: {totalRows - 1})
+                </span>
+              )}
             </div>
 
-            {/* Start Row Input */}
+            {/* Start Row Input - with validation */}
             <div className="flex items-center gap-2">
               <span className="text-dark font-semibold text-lg">
                 Starting Row:
@@ -217,19 +251,49 @@ export default function FixedStepModal({ onClose }) {
               <input
                 type="number"
                 value={startingRow}
-                onChange={(e) => setStartingRow(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  // Validate the starting row against total rows
+                  if (totalRows > 0) {
+                    setStartingRow(Math.min(Math.max(1, value), totalRows));
+                  } else {
+                    setStartingRow(value);
+                  }
+                }}
                 min="1"
+                max={totalRows || 1}
                 className="w-[80px] rounded border-2 border-primary px-2 py-1 text-center h-[42px]"
               />
+              {totalRows > 0 && (
+                <span className="text-sm text-gray-500">
+                  (Max: {totalRows})
+                </span>
+              )}
             </div>
           </div>
 
-          <button
-            onClick={handleProceed}
-            className="rounded bg-[#19A7CE] px-8 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
-          >
-            GENERATE
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleProceed}
+              disabled={!selectedSheet || totalRows === 0}
+              className={`rounded px-8 py-2 font-medium text-white h-[42px] ${
+                !selectedSheet || totalRows === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#19A7CE] hover:bg-[#1899BD]"
+              }`}
+            >
+              GENERATE
+            </button>
+
+            {extracted && randomSample && randomSample.length > 0 && (
+              <button
+                onClick={() => setShowOnlySelected(!showOnlySelected)}
+                className="rounded bg-orange-500 px-6 py-2 font-medium text-white hover:bg-orange-600 h-[42px]"
+              >
+                {showOnlySelected ? "SHOW ALL" : "ISOLATE"}
+              </button>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -238,7 +302,7 @@ export default function FixedStepModal({ onClose }) {
           </div>
         )}
 
-        {extracted && randomSample && (
+        {extracted && displayData && displayData.length > 0 && (
           <>
             <div className="mt-6 max-h-[400px] overflow-y-auto">
               <table className="w-full border-collapse table-fixed">
@@ -266,34 +330,42 @@ export default function FixedStepModal({ onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {randomSample.map((row, rowIndex) => (
-                    <tr
-                      key={rowIndex}
-                      // Added red highlighting with bg-red-200
-                      className="h-10 hover:bg-gray-100 border-b border-dark bg-red-200"
-                    >
-                      <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
-                        {rowIndex + 1}
-                      </td>
-                      {[
-                        "ACOUNT CODE",
-                        "ACCOUNT NAME",
-                        "Entry Date",
-                        "ENTRY NUMBER",
-                        "NARRATION",
-                        "AMOUNT",
-                        "USER",
-                      ].map((column, colIndex) => (
-                        <td
-                          key={colIndex}
-                          className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
-                          title={row[column]}
-                        >
-                          {row[column]}
+                  {displayData.map((row, rowIndex) => {
+                    // Determine if this row should be highlighted
+                    const isSelected =
+                      showOnlySelected ||
+                      (selectedIndices.includes(rowIndex) && !showOnlySelected);
+
+                    return (
+                      <tr
+                        key={rowIndex}
+                        className={`h-10 hover:bg-gray-100 border-b border-dark ${
+                          isSelected ? "bg-red-200" : ""
+                        }`}
+                      >
+                        <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
+                          {rowIndex + 1}
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                        {[
+                          "ACOUNT CODE",
+                          "ACCOUNT NAME",
+                          "Entry Date",
+                          "ENTRY NUMBER",
+                          "NARRATION",
+                          "AMOUNT",
+                          "USER",
+                        ].map((column, colIndex) => (
+                          <td
+                            key={colIndex}
+                            className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"
+                            title={row[column]}
+                          >
+                            {row[column]}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

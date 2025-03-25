@@ -7,6 +7,7 @@ export const CustomDropdown = ({
   isEditable = true,
   className = "",
   onSelect,
+  alwaysDisplayPlaceholder = false, // new prop added
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -44,7 +45,9 @@ export const CustomDropdown = ({
             isOpen || isEditable ? "text-[#8E8D8D]" : " text-dark"
           }`}
         >
-          {selectedOption?.label || placeholder}
+          {alwaysDisplayPlaceholder
+            ? placeholder
+            : selectedOption?.label || placeholder}
         </span>
         {!isEditable && (
           <img

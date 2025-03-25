@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 import { useState } from "react";
@@ -77,37 +78,25 @@ const PopulationHomogeneity = ({ onClose }) => {
       // Recalculate overall population CV with sorted data
       const overallCV = calculateCV(sortedData);
       let subpopulations = [];
-
-      if (parseFloat(overallCV) <= parseFloat(maxCv)) {
-        // If overall CV meets criteria, use the entire sorted data as one subsample.
-        subpopulations.push({
-          start: 0,
-          end: sortedData.length - 1,
-          cv: overallCV,
-        });
-      } else {
-        let startIndex = 0;
-        while (startIndex < sortedData.length) {
-          let endIndex = startIndex;
-          let candidate = [sortedData[startIndex]];
-          // Expand the candidate group until adding the next row causes CV to exceed the maximum acceptable value
-          while (endIndex + 1 < sortedData.length) {
-            const nextCandidate = [...candidate, sortedData[endIndex + 1]];
-            const candidateCV = calculateCV(nextCandidate);
-            if (parseFloat(candidateCV) <= parseFloat(maxCv)) {
-              candidate.push(sortedData[endIndex + 1]);
-              endIndex++;
-            } else {
-              break;
-            }
+      let startIndex = 0;
+      while (startIndex < sortedData.length) {
+        let endIndex = startIndex + 1;
+        let bestEnd = startIndex;
+        while (endIndex <= sortedData.length) {
+          const currentGroup = sortedData.slice(startIndex, endIndex);
+          const cvValue = calculateCV(currentGroup);
+          if (parseFloat(cvValue) > parseFloat(maxCv)) {
+            break;
           }
-          subpopulations.push({
-            start: startIndex,
-            end: endIndex,
-            cv: calculateCV(candidate),
-          });
-          startIndex = endIndex + 1;
+          bestEnd = endIndex;
+          endIndex++;
         }
+        subpopulations.push({
+          start: startIndex,
+          end: bestEnd - 1,
+          cv: calculateCV(sortedData.slice(startIndex, bestEnd)),
+        });
+        startIndex = bestEnd;
       }
 
       // Update activeTable with sorted sheet data and subpopulations

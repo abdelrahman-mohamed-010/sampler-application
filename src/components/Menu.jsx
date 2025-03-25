@@ -57,6 +57,14 @@ const Menu = ({ isEditable = true }) => {
     if (!activeTable?.data) return;
     const newData = { ...activeTable.data };
 
+    // Only sort the active sheet
+    const activeSheet = activeTable.activePage || Object.keys(newData)[0];
+    if (!newData[activeSheet]) return;
+
+    // Define sorting info
+    let sortedColumn = null;
+    let sortedOrder = null;
+
     // Helper comparator for NARRATION sorting handling empty cells
     const compareNarration = (a, b, ascending = true) => {
       const narrA = a["NARRATION"] || "";
@@ -81,91 +89,92 @@ const Menu = ({ isEditable = true }) => {
         : acctB.localeCompare(acctA);
     };
 
-    Object.keys(newData).forEach((sheet) => {
-      if (
-        option.value.startsWith("Entry Date") &&
-        newData[sheet].length > 0 &&
-        Object.hasOwn(newData[sheet][0], "Entry Date")
-      ) {
-        // Sort by Entry Date
-        const sorted = [...newData[sheet]].sort((a, b) => {
-          const dateA = parseDate(a["Entry Date"]);
-          const dateB = parseDate(b["Entry Date"]);
-          return dateA - dateB;
-        });
-        newData[sheet] =
-          option.value === "Entry Date: New to Old" ? sorted.reverse() : sorted;
-      } else if (option.value === "Amount coloumn") {
-        const sorted = [...newData[sheet]].sort(
-          (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
-        );
-        newData[sheet] = sorted;
-      } else if (option.value === "ENTRY NUMBER") {
-        const sorted = [...newData[sheet]].sort((a, b) => {
-          const numA =
-            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
-          const numB =
-            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
-          return numA - numB;
-        });
-        newData[sheet] = sorted;
-      } else if (option.value === "Amount: Descending") {
-        const sorted = [...newData[sheet]].sort(
-          (a, b) => (b["AMOUNT"] || 0) - (a["AMOUNT"] || 0)
-        );
-        newData[sheet] = sorted;
-      } else if (option.value === "Amount: Ascending") {
-        const sorted = [...newData[sheet]].sort(
-          (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
-        );
-        newData[sheet] = sorted;
-      } else if (option.value === "Entry Number Highest") {
-        const sorted = [...newData[sheet]].sort((a, b) => {
-          const numA =
-            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
-          const numB =
-            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
-          return numB - numA;
-        });
-        newData[sheet] = sorted;
-      } else if (option.value === "Entry Number Lowest") {
-        const sorted = [...newData[sheet]].sort((a, b) => {
-          const numA =
-            parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
-          const numB =
-            parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
-          return numA - numB;
-        });
-        newData[sheet] = sorted;
-      } else if (option.value === "NARRATION: A to Z") {
-        // new block for A to Z
-        const sorted = [...newData[sheet]].sort((a, b) =>
-          compareNarration(a, b, true)
-        );
-        newData[sheet] = sorted;
-      } else if (option.value === "NARRATION: Z to A") {
-        // updated block for Z to A: filter out empty cells first
-        const filtered = [...newData[sheet]].filter(
-          (row) => (row["NARRATION"] || "").trim() !== ""
-        );
-        const sorted = filtered.sort((a, b) => compareNarration(a, b, false));
-        newData[sheet] = sorted;
-      } else if (option.value === "Entry Name: A to Z") {
-        // new block for sorting ACCOUNT NAME in ascending order
-        const sorted = [...newData[sheet]].sort((a, b) =>
-          compareAccountName(a, b, true)
-        );
-        newData[sheet] = sorted;
-      } else if (option.value === "Entry Name: Z to A") {
-        // new block for sorting ACCOUNT NAME in descending order with filtering empty cells first
-        const filtered = [...newData[sheet]].filter(
-          (row) => (row["ACCOUNT NAME"] || "").trim() !== ""
-        );
-        const sorted = filtered.sort((a, b) => compareAccountName(a, b, false));
-        newData[sheet] = sorted;
-      }
-    });
-    dispatch(updateActiveTable({ data: newData }));
+    if (
+      option.value.startsWith("Entry Date") &&
+      newData[activeSheet].length > 0 &&
+      Object.hasOwn(newData[activeSheet][0], "Entry Date")
+    ) {
+      sortedColumn = "Entry Date";
+      sortedOrder = option.value.includes("New to Old") ? "desc" : "asc";
+      const sorted = [...newData[activeSheet]].sort((a, b) => {
+        const dateA = parseDate(a["Entry Date"]);
+        const dateB = parseDate(b["Entry Date"]);
+        return dateA - dateB;
+      });
+      newData[activeSheet] =
+        option.value === "Entry Date: New to Old" ? sorted.reverse() : sorted;
+    } else if (option.value === "Amount: Descending") {
+      sortedColumn = "AMOUNT";
+      sortedOrder = "desc";
+      const sorted = [...newData[activeSheet]].sort(
+        (a, b) => (b["AMOUNT"] || 0) - (a["AMOUNT"] || 0)
+      );
+      newData[activeSheet] = sorted;
+    } else if (option.value === "Amount: Ascending") {
+      sortedColumn = "AMOUNT";
+      sortedOrder = "asc";
+      const sorted = [...newData[activeSheet]].sort(
+        (a, b) => (a["AMOUNT"] || 0) - (b["AMOUNT"] || 0)
+      );
+      newData[activeSheet] = sorted;
+    } else if (option.value === "Entry Number Highest") {
+      sortedColumn = "ENTRY NUMBER";
+      sortedOrder = "desc";
+      const sorted = [...newData[activeSheet]].sort((a, b) => {
+        const numA =
+          parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+        const numB =
+          parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+        return numB - numA;
+      });
+      newData[activeSheet] = sorted;
+    } else if (option.value === "Entry Number Lowest") {
+      sortedColumn = "ENTRY NUMBER";
+      sortedOrder = "asc";
+      const sorted = [...newData[activeSheet]].sort((a, b) => {
+        const numA =
+          parseInt((a["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+        const numB =
+          parseInt((b["ENTRY NUMBER"] || "").replace(/[^\d]/g, ""), 10) || 0;
+        return numA - numB;
+      });
+      newData[activeSheet] = sorted;
+    } else if (option.value === "NARRATION: A to Z") {
+      sortedColumn = "NARRATION";
+      sortedOrder = "asc";
+      const sorted = [...newData[activeSheet]].sort((a, b) =>
+        compareNarration(a, b, true)
+      );
+      newData[activeSheet] = sorted;
+    } else if (option.value === "NARRATION: Z to A") {
+      sortedColumn = "NARRATION";
+      sortedOrder = "desc";
+      const filtered = [...newData[activeSheet]].filter(
+        (row) => (row["NARRATION"] || "").trim() !== ""
+      );
+      const sorted = filtered.sort((a, b) => compareNarration(a, b, false));
+      newData[activeSheet] = sorted;
+    } else if (option.value === "Entry Name: A to Z") {
+      sortedColumn = "ACCOUNT NAME";
+      sortedOrder = "asc";
+      const sorted = [...newData[activeSheet]].sort((a, b) =>
+        compareAccountName(a, b, true)
+      );
+      newData[activeSheet] = sorted;
+    } else if (option.value === "Entry Name: Z to A") {
+      sortedColumn = "ACCOUNT NAME";
+      sortedOrder = "desc";
+      const filtered = [...newData[activeSheet]].filter(
+        (row) => (row["ACCOUNT NAME"] || "").trim() !== ""
+      );
+      const sorted = filtered.sort((a, b) => compareAccountName(a, b, false));
+      newData[activeSheet] = sorted;
+    }
+    const sortedInfo = {
+      ...activeTable.sortedInfo,
+      [activeSheet]: { sortedColumn, sortedOrder },
+    };
+    dispatch(updateActiveTable({ data: newData, sortedInfo }));
   };
 
   const handleSampleSelect = (option) => {
@@ -262,6 +271,7 @@ const Menu = ({ isEditable = true }) => {
           options={SortBy}
           placeholder="Sort By"
           isEditable={isEditable}
+          alwaysDisplayPlaceholder={true}
           onSelect={handleSortBySelect}
         />
 
@@ -298,6 +308,7 @@ const Menu = ({ isEditable = true }) => {
         <CustomDropdown
           options={sampleOptions}
           placeholder="Sample Selection"
+          alwaysDisplayPlaceholder={true} // added prop to always show the placeholder
           isEditable={isEditable}
           onSelect={handleSampleSelect} // added handler
         />
