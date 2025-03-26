@@ -66,57 +66,76 @@ const PopulationHomogeneity = ({ onClose }) => {
   // Calculate overall population CV
   const overallCV = calculateCV(sheetData);
 
-  // Modified handleProceed to sort data and extract maximum contiguous subpopulations
+  // Calculate mean of array
+  const calculateMean = (arr) => {
+    return arr.reduce((sum, val) => sum + val, 0) / arr.length;
+  };
+
+  // Calculate standard deviation
+  const calculateStdDev = (arr, mean) => {
+    return Math.sqrt(
+      arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length
+    );
+  };
+
+  // Modified handleProceed to implement the new grouping algorithm
   const handleProceed = () => {
     try {
       const formaData = sheetData;
-      // Step 3: Sort rows based on the absolute AMOUNT (ascending)
-      const sortedData = [...formaData].sort(
-        (a, b) =>
-          Math.abs(parseFloat(a.AMOUNT)) - Math.abs(parseFloat(b.AMOUNT))
-      );
-      // Recalculate overall population CV with sorted data
-      const overallCV = calculateCV(sortedData);
+      // Convert to absolute values and sort
+      const sortedAmounts = formaData
+        .map((item) => Math.abs(parseFloat(item.AMOUNT)))
+        .filter((amount) => !isNaN(amount))
+        .sort((a, b) => a - b);
+
       let subpopulations = [];
-      let startIndex = 0;
-      while (startIndex < sortedData.length) {
-        let endIndex = startIndex + 1;
-        let bestEnd = startIndex;
-        while (endIndex <= sortedData.length) {
-          const currentGroup = sortedData.slice(startIndex, endIndex);
-          const cvValue = calculateCV(currentGroup);
-          if (parseFloat(cvValue) > parseFloat(maxCv)) {
+      let start = 0;
+
+      while (start < sortedAmounts.length) {
+        let end = start + 1;
+        let bestEnd = start;
+
+        while (end <= sortedAmounts.length) {
+          const currentGroup = sortedAmounts.slice(start, end);
+          const mean = calculateMean(currentGroup);
+          const stdDev = calculateStdDev(currentGroup, mean);
+          const cv = (stdDev / mean) * 100;
+
+          if (cv > parseFloat(maxCv)) {
             break;
           }
-          bestEnd = endIndex;
-          endIndex++;
+
+          bestEnd = end;
+          end++;
         }
+
+        const groupData = formaData.slice(start, bestEnd);
+        const groupCV = calculateCV(groupData);
+
         subpopulations.push({
-          start: startIndex,
+          start: start,
           end: bestEnd - 1,
-          cv: calculateCV(sortedData.slice(startIndex, bestEnd)),
+          cv: groupCV,
+          data: groupData,
         });
-        startIndex = bestEnd;
+
+        start = bestEnd;
       }
 
-      // Update activeTable with sorted sheet data and subpopulations
+      // Update activeTable with subpopulations
       const updatedTable = {
         ...activeTable,
-        data: {
-          ...activeTable.data,
-          [sheetKey]: sortedData,
-        },
-        cv: parseFloat(overallCV),
+        cv: calculateCV(sheetData),
         maxCv: parseFloat(maxCv),
         subpopulations,
       };
 
       dispatch(updateActiveTable(updatedTable));
       setShowInfo(true);
-      setSuccess("CV values calculated and subsamples created successfully!");
+      setSuccess("Groups created successfully using optimized algorithm!");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError("Error calculating CV values");
+      setError("Error during grouping: " + err.message);
       setTimeout(() => setError(""), 3000);
     }
   };
