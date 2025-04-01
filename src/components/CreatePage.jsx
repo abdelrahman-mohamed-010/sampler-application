@@ -4,7 +4,6 @@ import { CircleX } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { updateActiveTable } from "../redux/tableSlice";
-import { Range, getTrackBackground } from "react-range"; // Import react-range
 
 const CreatePage = ({ onClose }) => {
   // Replace dummy with sheets from activeTable
@@ -21,11 +20,12 @@ const CreatePage = ({ onClose }) => {
     startDate: "",
     endDate: "",
     NARRATION: "",
-    amountFrom: -10000,
-    amountTo: 10000,
+    amountFrom: "", // removed initial default
+    amountTo: "", // removed initial default
     selectedSheets: [],
-    accountCode: "",
-    accountTitle: "",
+    accountCodeFrom: "", // new: range start for account code
+    accountCodeTo: "", // new: range end for account code
+    user: "", // new: replaced accountTitle
   });
 
   const [error, setError] = useState("");
@@ -45,18 +45,14 @@ const CreatePage = ({ onClose }) => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
+    // For numeric fields, convert only if a value is provided
+    const parsedValue =
+      (name === "amountFrom" || name === "amountTo") && value !== ""
+        ? Number(value)
+        : value;
     setFilters((prev) => ({
       ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Special handler for amount range sliders with react-range
-  const handleAmountRangeChange = (values) => {
-    setFilters((prev) => ({
-      ...prev,
-      amountFrom: values[0],
-      amountTo: values[1],
+      [name]: parsedValue,
     }));
   };
 
@@ -94,30 +90,37 @@ const CreatePage = ({ onClose }) => {
                 .toLowerCase()
                 .includes(filters.NARRATION.toLowerCase()));
 
-          // Amount filtering with min and max values
+          // Amount filtering: if no value provided, skip check
           const amount = parseFloat(row["AMOUNT"]);
-          const amountMatch =
-            amount >= filters.amountFrom && amount <= filters.amountTo;
+          const minValid =
+            filters.amountFrom === "" || amount >= filters.amountFrom;
+          const maxValid =
+            filters.amountTo === "" || amount <= filters.amountTo;
+          const amountMatch = minValid && maxValid;
 
-          // Account filtering
-          const accountCodeMatch =
-            !filters.accountCode ||
-            (row["ACOUNT CODE"] &&
-              row["ACOUNT CODE"].toString() === filters.accountCode);
-          const accountTitleMatch =
-            !filters.accountTitle ||
+          // Account Code filtering as range:
+          const code = row["ACOUNT CODE"] ? row["ACOUNT CODE"].toString() : "";
+          const minValidCode =
+            filters.accountCodeFrom === "" || code >= filters.accountCodeFrom;
+          const maxValidCode =
+            filters.accountCodeTo === "" || code <= filters.accountCodeTo;
+          const accountCodeMatch = minValidCode && maxValidCode;
+
+          // User filtering (replacing old accountTitle filtering)
+          const userMatch =
+            !filters.user ||
             (row["ACCOUNT NAME"] &&
               row["ACCOUNT NAME"]
                 .toString()
                 .toLowerCase()
-                .includes(filters.accountTitle.toLowerCase()));
+                .includes(filters.user.toLowerCase()));
 
           if (
             dateMatch &&
             narrationMatch &&
             amountMatch &&
             accountCodeMatch &&
-            accountTitleMatch
+            userMatch
           ) {
             const newRow = { ...row };
             newSheetData.push(newRow);
@@ -249,132 +252,68 @@ const CreatePage = ({ onClose }) => {
             />
           </div>
 
-          {/* Amount Range with React Range - Fixed Version */}
+          {/* Amount inputs */}
           <div className="mb-4 flex items-center gap-6">
             <label className="block mb-2 font-semibold text-dark text-xl">
-              Amount:
+              Amount From:
             </label>
-            <div className="flex flex-col w-full">
-              <div
-                style={{
-                  height: "60px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Range
-                  values={[filters.amountFrom, filters.amountTo]}
-                  step={100}
-                  min={-10000}
-                  max={10000}
-                  onChange={handleAmountRangeChange}
-                  renderTrack={({ props, children }) => (
-                    <div
-                      onMouseDown={props.onMouseDown}
-                      onTouchStart={props.onTouchStart}
-                      style={{
-                        ...props.style,
-                        height: "36px",
-                        display: "flex",
-                        width: "100%",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div
-                        ref={props.ref}
-                        style={{
-                          height: "8px",
-                          width: "100%",
-                          borderRadius: "4px",
-                          background: getTrackBackground({
-                            values: [filters.amountFrom, filters.amountTo],
-                            colors: ["#ccc", "#3B82F6", "#ccc"],
-                            min: -10000,
-                            max: 10000,
-                          }),
-                          alignSelf: "center",
-                        }}
-                      >
-                        {children}
-                      </div>
-                    </div>
-                  )}
-                  renderThumb={({ index, props, isDragged }) => (
-                    <div
-                      {...props}
-                      style={{
-                        ...props.style,
-                        height: "24px",
-                        width: "24px",
-                        borderRadius: "50%",
-                        backgroundColor: "#3B82F6",
-                        border: "3px solid white",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        boxShadow: "0px 2px 6px #AAA",
-                        outline: "none",
-                        zIndex: isDragged ? 3 : 2,
-                        cursor: "grab",
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "-32px",
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: "12px",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          backgroundColor: "#3B82F6",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {index === 0 ? "Min: " : "Max: "}
-                        {props["aria-valuenow"]}
-                      </div>
-                    </div>
-                  )}
-                />
-              </div>
-
-              <div className="flex justify-between mt-4">
-                <span className="text-sm font-medium">-10k</span>
-                <div className="flex gap-10">
-                  <span className="text-sm font-medium">
-                    From: {filters.amountFrom}
-                  </span>
-                  <span className="text-sm font-medium">
-                    To: {filters.amountTo}
-                  </span>
-                </div>
-                <span className="text-sm font-medium">10k</span>
-              </div>
-            </div>
+            <input
+              type="number"
+              name="amountFrom"
+              value={filters.amountFrom}
+              onChange={handleFilterChange}
+              className="rounded p-2 border-2 border-primary"
+            />
+            <label className="block mb-2 font-semibold text-dark text-xl">
+              To:
+            </label>
+            <input
+              type="number"
+              name="amountTo"
+              value={filters.amountTo}
+              onChange={handleFilterChange}
+              className="rounded p-2 border-2 border-primary"
+            />
           </div>
 
+          {/* New Code range filter */}
           <div className="mb-4 flex items-center gap-6">
-            <label className="block  mb-2 font-semibold  text-dark text-xl">
-              Account:
+            <label className="block mb-2 font-semibold text-dark text-xl">
+              Code:
+            </label>
+            <span className="self-center font-semibold">from</span>
+            <input
+              type="text"
+              name="accountCodeFrom"
+              value={filters.accountCodeFrom}
+              onChange={handleFilterChange}
+              className="rounded p-2 border-2 border-primary"
+            />
+            <span className="self-center font-semibold">to</span>
+            <input
+              type="text"
+              name="accountCodeTo"
+              value={filters.accountCodeTo}
+              onChange={handleFilterChange}
+              className="rounded p-2 border-2 border-primary"
+            />
+          </div>
+
+          {/* New separate User filter */}
+          <div className="mb-4 flex items-center gap-6">
+            <label className="block mb-2 font-semibold text-dark text-xl">
+              User:
             </label>
             <input
               type="text"
-              name="accountCode"
-              value={filters.accountCode}
+              name="user"
+              value={filters.user}
               onChange={handleFilterChange}
-              className="rounded text-center p-2 w-[158px] h-[42px] border-2 border-primary "
-              placeholder="CODE"
-            />
-            <input
-              type="text"
-              name="accountTitle"
-              value={filters.accountTitle}
-              onChange={handleFilterChange}
-              className="rounded text-center p-2 w-[158px] h-[42px] border-2 border-primary "
+              className="rounded text-center p-2 w-[158px] h-[42px] border-2 border-primary"
               placeholder="TITLE"
             />
           </div>
+
           {error && (
             <div className="text-[#C63232] text-sm mt-2 mb-2 text-center">
               {error}
@@ -397,5 +336,4 @@ const CreatePage = ({ onClose }) => {
   );
 };
 
-// Remove the old style element since we're using react-range now
 export default CreatePage;

@@ -221,7 +221,7 @@ export default function BlockSelectionModal({ onClose }) {
         }
 
         // For small datasets, place blocks evenly
-        const availablePositions = [...Array(maxStartPos).keys()];
+        let availablePositions = [...Array(maxStartPos).keys()];
         const selectedPositions = [];
 
         // Select random starting positions for blocks
@@ -233,7 +233,10 @@ export default function BlockSelectionModal({ onClose }) {
           selectedPositions.push(startPos);
 
           // Remove positions that would cause blocks to overlap
-          availablePositions.splice(0, availablePositions.length);
+          const blockEnd = startPos + blockSize;
+          availablePositions = availablePositions.filter(
+            (pos) => pos >= blockEnd
+          );
         }
 
         // Sort positions to maintain data order

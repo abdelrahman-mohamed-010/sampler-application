@@ -237,7 +237,9 @@ export default function VariableStepModal({ onClose }) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-dark font-semibold text-lg">Row:</span>
+              <span className="text-dark font-semibold text-lg">
+                Starting row:
+              </span>
               <input
                 type="number"
                 value={startingRow}

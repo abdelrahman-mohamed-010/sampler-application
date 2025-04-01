@@ -45,8 +45,8 @@ const Menu = ({ isEditable = true }) => {
     { value: "Entry Number Lowest", label: "Entry Number Lowest" },
     { value: "NARRATION: A to Z", label: "NARRATION: A to Z" }, // new option
     { value: "NARRATION: Z to A", label: "NARRATION: Z to A" }, // new option
-    { value: "Entry Name: A to Z", label: "Entry Name: A to Z" }, // new option
-    { value: "Entry Name: Z to A", label: "Entry Name: Z to A" }, // new option
+    { value: "Entry Name: A to Z", label: "Account Name: A to Z" }, // updated option
+    { value: "Entry Name: Z to A", label: "Account Name: Z to A" }, // updated option
   ];
 
   const handleExportData = () => {
