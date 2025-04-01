@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 
 import { useSelector, useDispatch } from "react-redux"; // add useDispatch
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ExtractDataModal from "./ExtractDataModal";
 import { updateActiveTable, deletePage } from "../redux/tableSlice";
 import { Trash2 } from "lucide-react";
@@ -52,6 +52,44 @@ const Table = ({ isEditable }) => {
       ? activeTable.data[activePage]?.length || 0
       : 0;
   }, [activePage, activeTable.data]);
+
+  const [columnOrder, setColumnOrder] = useState([]);
+  const [draggedColumn, setDraggedColumn] = useState(null);
+
+  // Initialize column order when columns change
+  useEffect(() => {
+    if (columns.length > 0 && columnOrder.length === 0) {
+      setColumnOrder(columns);
+    }
+  }, [columns]);
+
+  const handleDragStart = (e, column) => {
+    if (isEditable) return;
+    setDraggedColumn(column);
+    e.dataTransfer.setData("text/plain", column);
+  };
+
+  const handleDragOver = (e, column) => {
+    e.preventDefault();
+    if (isEditable || !draggedColumn || draggedColumn === column) return;
+
+    const currentOrder = [...columnOrder];
+    const draggedIdx = currentOrder.indexOf(draggedColumn);
+    const dropIdx = currentOrder.indexOf(column);
+
+    if (draggedIdx !== dropIdx) {
+      currentOrder.splice(draggedIdx, 1);
+      currentOrder.splice(dropIdx, 0, draggedColumn);
+      setColumnOrder(currentOrder);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+  };
+
+  // Use ordered columns for display
+  const displayColumns = columnOrder.length > 0 ? columnOrder : columns;
 
   if (!activeTable || !activeTable.data || sheetNames.length === 0) {
     return (
@@ -190,18 +228,22 @@ const Table = ({ isEditable }) => {
                   isEditable ? "bg-[#8E8D8D]" : "bg-dark"
                 } text-white h-24`}
               >
-                <th className="font-semibold w-12 border-r border-white text-[20px]">
+                <th className="min-w-[150px] font-semibold w-12 border-r border-white text-[20px] px-2">
                   Line
                 </th>
-                {columns.map((column, index) => {
+                {displayColumns.map((column, index) => {
                   const sheetSort =
                     activeTable.sortedInfo && activeTable.sortedInfo[activePage]
                       ? activeTable.sortedInfo[activePage]
                       : null;
                   return (
                     <th
-                      key={index}
-                      className="font-semibold border-r border-white last:border-r-0 text-[20px]"
+                      key={column}
+                      draggable={!isEditable}
+                      onDragStart={(e) => handleDragStart(e, column)}
+                      onDragOver={(e) => handleDragOver(e, column)}
+                      onDragEnd={handleDragEnd}
+                      className="min-w-[150px] font-semibold border-r border-white last:border-r-0 text-[20px] px-2 cursor-move"
                     >
                       <span
                         className={`px-2 inline-block ${getTextSizeClass(
@@ -229,10 +271,10 @@ const Table = ({ isEditable }) => {
                   <td className="px-16 text-[#05445e] font-normal border-r border-dark text-center">
                     {rowIndex + 1}
                   </td>
-                  {columns.map((column, colIndex) => (
+                  {displayColumns.map((column, colIndex) => (
                     <td
                       key={colIndex}
-                      className="text-[#05445e] text-center font-normal border-r border-dark last:border-r-0"
+                      className="min-w-[150px] px-2 text-[#05445e] text-center font-normal border-r border-dark last:border-r-0"
                     >
                       {row[column] !== undefined ? row[column] : ""}
                     </td>
