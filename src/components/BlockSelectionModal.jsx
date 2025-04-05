@@ -203,9 +203,7 @@ export default function BlockSelectionModal({ onClose }) {
 
       // Special case for very small datasets
       if (totalRows <= 10) {
-        // Divide population into available positions for blocks
         const maxStartPos = totalRows - blockSize + 1;
-
         if (maxStartPos <= 0) {
           // If dataset is too small for even one block, use all rows
           for (let i = 0; i < totalRows; i++) {
@@ -220,33 +218,35 @@ export default function BlockSelectionModal({ onClose }) {
           return { sample, blockRanges };
         }
 
-        // For small datasets, place blocks evenly
-        let availablePositions = [...Array(maxStartPos).keys()];
+        // New approach: consider all candidates and only skip overlapping ones
+        const allPositions = [...Array(maxStartPos).keys()];
         const selectedPositions = [];
-
-        // Select random starting positions for blocks
-        for (let i = 0; i < numBlocks && availablePositions.length > 0; i++) {
-          const randomIndex = Math.floor(
-            Math.random() * availablePositions.length
-          );
-          const startPos = availablePositions[randomIndex];
-          selectedPositions.push(startPos);
-
-          // Remove positions that would cause blocks to overlap
-          const blockEnd = startPos + blockSize;
-          availablePositions = availablePositions.filter(
-            (pos) => pos >= blockEnd
-          );
+        while (
+          selectedPositions.length < numBlocks &&
+          allPositions.length > 0
+        ) {
+          const randomIndex = Math.floor(Math.random() * allPositions.length);
+          const pos = allPositions[randomIndex];
+          // Check for conflict: any already selected block overlaps with current candidate
+          let conflict = false;
+          for (const sel of selectedPositions) {
+            if (Math.abs(pos - sel) < blockSize) {
+              conflict = true;
+              break;
+            }
+          }
+          if (!conflict) {
+            selectedPositions.push(pos);
+          }
+          // Remove the candidate regardless to avoid infinite looping
+          allPositions.splice(randomIndex, 1);
         }
 
-        // Sort positions to maintain data order
+        // Sort positions and create blocks
         selectedPositions.sort((a, b) => a - b);
-
-        // Create blocks from selected positions
         selectedPositions.forEach((startPos) => {
           const endPos = Math.min(startPos + blockSize - 1, totalRows - 1);
           blockRanges.push({ start: startPos, end: endPos });
-
           for (let i = startPos; i <= endPos; i++) {
             const row = pop[i];
             const formattedRow = {};
@@ -256,7 +256,6 @@ export default function BlockSelectionModal({ onClose }) {
             sample.push(formattedRow);
           }
         });
-
         return { sample, blockRanges };
       }
 

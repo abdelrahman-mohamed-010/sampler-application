@@ -19,11 +19,28 @@ const Home = () => {
 
         workbook.SheetNames.forEach((sheetName) => {
           const worksheet = workbook.Sheets[sheetName];
+
+          // Get header range for this sheet
+          const range = XLSX.utils.decode_range(worksheet["!ref"]);
+          const headers = [];
+
+          // First collect all headers from the first row
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell =
+              worksheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
+            if (cell && cell.v) headers.push(cell.v);
+          }
+
+          // Now get all data with these headers
           const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             raw: false,
             dateNF: "MM/DD/YYYY",
             cellDates: true,
+            defval: "", // Use empty string for missing values
+            header: headers, // Explicitly provide headers
           });
+
+          // Process the data as before
           const processedData = jsonData.map((row) => {
             const newRow = { ...row };
             Object.keys(newRow).forEach((key) => {

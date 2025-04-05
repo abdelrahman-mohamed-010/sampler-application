@@ -31,9 +31,14 @@ const Table = ({ isEditable }) => {
   }, [activePage, activeTable.data]);
 
   const columns = useMemo(() => {
-    return sheetData.length > 0
-      ? Object.keys(sheetData[0]).filter((key) => key !== "rowNum")
-      : [];
+    // Scan ALL rows for unique columns
+    const allKeys = new Set();
+    sheetData.forEach((row) => {
+      Object.keys(row).forEach((key) => {
+        if (key !== "rowNum") allKeys.add(key);
+      });
+    });
+    return Array.from(allKeys);
   }, [sheetData]);
 
   // Remove the totalRows forcing minimum of 10 - show actual rows only
@@ -58,9 +63,8 @@ const Table = ({ isEditable }) => {
 
   // Initialize column order when columns change
   useEffect(() => {
-    if (columns.length > 0 && columnOrder.length === 0) {
-      setColumnOrder(columns);
-    }
+    // Always reset column order when columns change
+    setColumnOrder([...columns]);
   }, [columns]);
 
   const handleDragStart = (e, column) => {
@@ -112,7 +116,7 @@ const Table = ({ isEditable }) => {
             PAGES
           </div>
           <div className="flex-1 flex flex-col">
-            {sheetNames.map((sheetName) => (
+            {sheetNames.map((sheetName, idx) => (
               <div
                 key={sheetName}
                 onClick={
@@ -123,7 +127,13 @@ const Table = ({ isEditable }) => {
                       }
                     : undefined
                 }
-                className={`group relative h-[72px] flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
+                style={{
+                  // Match height with table row if it exists
+                  height:
+                    document.querySelector(`tbody tr:nth-child(${idx + 1})`)
+                      ?.offsetHeight || "72px",
+                }}
+                className={`group relative flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
                   ${!isEditable ? "cursor-pointer" : "cursor-default "}
                   ${
                     activePage === sheetName
@@ -207,13 +217,19 @@ const Table = ({ isEditable }) => {
                 </div>
               </div>
             ))}
-            {/* Add empty cells to match table row count */}
             {Array.from({
               length: Math.max(0, activeSheetRowCount - sheetNames.length),
             }).map((_, index) => (
               <div
                 key={`empty-${index}`}
-                className="h-[72px] border-r border-b border-dark"
+                style={{
+                  // Match height with corresponding table row
+                  height:
+                    document.querySelector(
+                      `tbody tr:nth-child(${sheetNames.length + index + 1})`
+                    )?.offsetHeight || "72px",
+                }}
+                className="border-r border-b border-dark"
               />
             ))}
           </div>

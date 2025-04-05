@@ -82,44 +82,78 @@ const PopulationHomogeneity = ({ onClose }) => {
   const handleProceed = () => {
     try {
       const formaData = sheetData;
-      // Convert to absolute values and sort
-      const sortedAmounts = formaData
-        .map((item) => Math.abs(parseFloat(item.AMOUNT)))
-        .filter((amount) => !isNaN(amount))
-        .sort((a, b) => a - b);
+      // Convert to absolute values
+      const absoluteAmounts = formaData
+        .map((item, index) => ({
+          index,
+          amount: Math.abs(parseFloat(item.AMOUNT)),
+          originalData: item,
+        }))
+        .filter((item) => !isNaN(item.amount));
+
+      // Sort by amount
+      const sortedItems = [...absoluteAmounts].sort(
+        (a, b) => a.amount - b.amount
+      );
 
       let subpopulations = [];
-      let start = 0;
+      let unassigned = [];
 
-      while (start < sortedAmounts.length) {
-        let end = start + 1;
-        let bestEnd = start;
+      let i = 0;
+      while (i < sortedItems.length) {
+        let group = [sortedItems[i]];
+        let j = i + 1;
 
-        while (end <= sortedAmounts.length) {
-          const currentGroup = sortedAmounts.slice(start, end);
-          const mean = calculateMean(currentGroup);
-          const stdDev = calculateStdDev(currentGroup, mean);
+        // Try to add more items to the group while keeping CV <= maxCv
+        while (j < sortedItems.length) {
+          const testGroup = [...group, sortedItems[j]];
+          const testAmounts = testGroup.map((item) => item.amount);
+
+          // Calculate CV for test group
+          const mean = calculateMean(testAmounts);
+          const stdDev = calculateStdDev(testAmounts, mean);
           const cv = (stdDev / mean) * 100;
 
-          if (cv > parseFloat(maxCv)) {
+          if (cv <= parseFloat(maxCv)) {
+            group = testGroup;
+            j++;
+          } else {
             break;
           }
-
-          bestEnd = end;
-          end++;
         }
 
-        const groupData = formaData.slice(start, bestEnd);
-        const groupCV = calculateCV(groupData);
+        // If we could form a group with more than one element
+        if (group.length > 1) {
+          const groupData = group.map((item) => item.originalData);
+          const groupCV = calculateCV(groupData);
+
+          subpopulations.push({
+            indices: group.map((item) => item.index),
+            cv: groupCV,
+            data: groupData,
+            items: group,
+          });
+
+          i = j;
+        } else {
+          // This item couldn't form a group, add to unassigned
+          unassigned.push(sortedItems[i]);
+          i++;
+        }
+      }
+
+      // Add unassigned as the final group if any exist
+      if (unassigned.length > 0) {
+        const unassignedData = unassigned.map((item) => item.originalData);
+        const unassignedCV = calculateCV(unassignedData);
 
         subpopulations.push({
-          start: start,
-          end: bestEnd - 1,
-          cv: groupCV,
-          data: groupData,
+          indices: unassigned.map((item) => item.index),
+          cv: unassignedCV,
+          data: unassignedData,
+          items: unassigned,
+          isUnassigned: true,
         });
-
-        start = bestEnd;
       }
 
       // Update activeTable with subpopulations
@@ -151,14 +185,13 @@ const PopulationHomogeneity = ({ onClose }) => {
 
       const newSheetData = [];
 
-      // Extract data from subpopulations that meet CV criteria
+      // Extract data from subpopulations that meet CV criteria (exclude unassigned group)
       activeTable.subpopulations.forEach((subpop) => {
         const subpopCV = parseFloat(subpop.cv);
         const maxAcceptableCV = parseFloat(maxCv);
 
-        if (subpopCV <= maxAcceptableCV) {
-          const subpopData = formaData.slice(subpop.start, subpop.end + 1);
-          newSheetData.push(...subpopData);
+        if (subpopCV <= maxAcceptableCV && !subpop.isUnassigned) {
+          newSheetData.push(...subpop.data);
         }
       });
 
@@ -242,8 +275,13 @@ const PopulationHomogeneity = ({ onClose }) => {
                       : "border-[#C63232] text-[#C63232]"
                   }`}
                 >
-                  Subpopulation {index + 1} (Records {subpop.start}-{subpop.end}
-                  ): CV = {subpop.cv}%
+                  {subpop.isUnassigned
+                    ? "Unassigned Group"
+                    : `Group ${index + 1}`}
+                  {" - "}
+                  {subpop.data.length} items
+                  {" - "}
+                  CV = {subpop.cv}%
                 </div>
               ))}
             </div>
