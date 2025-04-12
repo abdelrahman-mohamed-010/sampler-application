@@ -183,34 +183,41 @@ const PopulationHomogeneity = ({ onClose }) => {
         return;
       }
 
-      const newSheetData = [];
+      let updatedData = { ...activeTable.data };
+      let pagesCreated = 0;
 
-      // Extract data from subpopulations that meet CV criteria (exclude unassigned group)
-      activeTable.subpopulations.forEach((subpop) => {
+      // Extract each qualifying subpopulation to a separate page
+      activeTable.subpopulations.forEach((subpop, index) => {
         const subpopCV = parseFloat(subpop.cv);
         const maxAcceptableCV = parseFloat(maxCv);
 
         if (subpopCV <= maxAcceptableCV && !subpop.isUnassigned) {
-          newSheetData.push(...subpop.data);
+          // Create a new page for this subpopulation
+          // Use the original sheet name with the CV appended
+          const newSheetName = `${sheetKey}%${subpop.cv}`;
+
+          // Add the subpopulation data as a new page
+          updatedData[newSheetName] = subpop.data;
+          pagesCreated++;
         }
       });
 
-      if (newSheetData.length === 0) {
+      if (pagesCreated === 0) {
         setError("No data meets the CV criteria");
         return;
       }
 
-      const newSheetName = `Page ${Object.keys(activeTable.data).length + 1}`;
       const updatedTable = {
         ...activeTable,
-        data: {
-          ...activeTable.data,
-          [newSheetName]: newSheetData,
-        },
+        data: updatedData,
       };
 
       dispatch(updateActiveTable(updatedTable));
-      setSuccess(`Extracted ${newSheetData.length} records to ${newSheetName}`);
+      setSuccess(
+        `Created ${pagesCreated} new page${
+          pagesCreated > 1 ? "s" : ""
+        } with qualified subsamples`
+      );
       setTimeout(() => onClose(), 1500);
     } catch (err) {
       console.error("Extract error:", err);
