@@ -110,7 +110,20 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
   );
   const [showDiagrams, setShowDiagrams] = useState(false);
   const [measures, setMeasures] = useState({});
-  const [computedResults, setComputedResults] = useState(null); // new state for computed values
+  const [computedResults, setComputedResults] = useState(null);
+
+  // Reset results when modal opens or closes
+  useEffect(() => {
+    if (!isOpen) {
+      setComputedResults(null);
+    }
+  }, [isOpen]);
+
+  // Handle modal close
+  const handleClose = () => {
+    setComputedResults(null);
+    onClose();
+  };
 
   // Get columns and update measures when sheetName changes
   useEffect(() => {
@@ -188,14 +201,19 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
               break;
             case "CV":
               if (numericValues.length > 0) {
-                const mean = calculateMean(numericValues);
-                // Check for zero mean to avoid division by zero
-                if (mean === 0) {
-                  colResult["CV"] = "undefined";
+                const amounts = numericValues.map(Math.abs);
+                const mean = calculateMean(amounts);
+
+                // If mean is very small, return zero to prevent extreme values
+                if (mean < 0.01) {
+                  colResult["CV"] = "0.00%";
                 } else {
-                  const std = calculateStd(numericValues, mean);
-                  const cv = (std / mean) * 100;
-                  colResult["CV"] = cv.toFixed(2) + "%";
+                  const variance = calculateVariance(amounts, mean);
+                  const standardDeviation = Math.sqrt(variance);
+                  const cv = (standardDeviation / mean) * 100;
+                  // Cap the maximum CV value to prevent extremely large percentages
+                  const cappedCV = Math.min(cv, 10000);
+                  colResult["CV"] = cappedCV.toFixed(2) + "%";
                 }
               }
               break;
@@ -242,7 +260,7 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
       <div className="bg-white shadow-lg rounded-lg p-8 relative min-w-[1000px] max-w-[80%] max-h-[95%] overflow-auto">
         <CircleX
           className="absolute top-4 right-4 text-[#C63232] w-8 h-8 cursor-pointer"
-          onClick={onClose}
+          onClick={handleClose}
         />
         <div className="flex flex-col justify-center items-center">
           <h2 className="text-dark font-semibold mt-0 w-full text-center text-2xl mb-2">
