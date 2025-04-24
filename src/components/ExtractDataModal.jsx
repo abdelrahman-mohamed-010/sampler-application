@@ -189,16 +189,13 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
             case "CV":
               if (numericValues.length > 0) {
                 const mean = calculateMean(numericValues);
-
-                // If mean is very small, avoid division that leads to huge CV values
-                if (mean < 0.01) {
-                  colResult["CV"] = "0.00%";
+                // Check for zero mean to avoid division by zero
+                if (mean === 0) {
+                  colResult["CV"] = "undefined";
                 } else {
                   const std = calculateStd(numericValues, mean);
                   const cv = (std / mean) * 100;
-                  // Cap the maximum CV value to prevent extremely large percentages
-                  const cappedCV = Math.min(cv, 10000);
-                  colResult["CV"] = cappedCV.toFixed(2) + "%";
+                  colResult["CV"] = cv.toFixed(2) + "%";
                 }
               }
               break;
