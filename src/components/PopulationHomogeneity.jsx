@@ -51,6 +51,10 @@ const PopulationHomogeneity = ({ onClose }) => {
     // Calculate mean
     const mean = amounts.reduce((sum, val) => sum + val, 0) / amounts.length;
 
+    // If mean is very small, the CV will be artificially high
+    // Add a threshold to prevent extreme values
+    if (mean < 0.01) return "0.00"; // Return zero for extremely small means
+
     // Calculate standard deviation
     const variance =
       amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
@@ -60,7 +64,10 @@ const PopulationHomogeneity = ({ onClose }) => {
     // Calculate CV (Coefficient of Variation)
     const cv = (standardDeviation / mean) * 100;
 
-    return cv.toFixed(2);
+    // Cap the maximum CV value to prevent extremely large percentages
+    const cappedCV = Math.min(cv, 10000);
+
+    return cappedCV.toFixed(2);
   };
 
   // Calculate overall population CV
