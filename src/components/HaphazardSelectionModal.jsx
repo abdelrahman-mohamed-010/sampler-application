@@ -1,41 +1,36 @@
 /* eslint-disable react/prop-types */
-import { CircleX, ChevronDown } from "lucide-react"; // Added ChevronDown
-import { useState, useRef, useEffect } from "react"; // Added useRef and useEffect
+import { CircleX, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setRandomSample, updateActiveTable } from "../redux/tableSlice";
 
-export default function RandomSampleModal({ onClose }) {
-  const [selectedSheet, setSelectedSheet] = useState(""); // Added sheet selection
-  const [isOpen, setIsOpen] = useState(false); // Added dropdown state
-  const dropdownRef = useRef(null); // Added dropdown ref
-  const [sampleSize, setSampleSize] = useState(4);
-  const [extracted, setExtracted] = useState(false);
+export default function HaphazardSelectionModal({ onClose }) {
+  const [selectedSheet, setSelectedSheet] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const [error, setError] = useState("");
   const [pageName, setPageName] = useState("");
   const [success, setSuccess] = useState("");
-  const [showOnlySelected, setShowOnlySelected] = useState(false); // For isolate functionality
-  const [selectedIndices, setSelectedIndices] = useState([]); // Track selected row indices
+  const [showOnlySelected, setShowOnlySelected] = useState(false);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  const [selectionApplied, setSelectionApplied] = useState(false);
   const dispatch = useDispatch();
   const activeTable = useSelector((state) => state.tables?.activeTable);
-  const randomSample = useSelector((state) => state.tables?.randomSample);
 
-  // Get available sheets with AMOUNT column
-  const sheetsWithAmount = Object.entries(activeTable?.data || {})
+  // Get available sheets
+  const sheetsWithData = Object.entries(activeTable?.data || {})
     .filter(([_, data]) => {
-      return (
-        Array.isArray(data) &&
-        data.length > 0 &&
-        Object.keys(data[0]).includes("AMOUNT")
-      );
+      return Array.isArray(data) && data.length > 0;
     })
     .map(([sheetName]) => sheetName);
 
   // Auto-select a sheet if only one exists
   useEffect(() => {
-    if (!selectedSheet && sheetsWithAmount.length === 1) {
-      setSelectedSheet(sheetsWithAmount[0]);
+    if (!selectedSheet && sheetsWithData.length === 1) {
+      setSelectedSheet(sheetsWithData[0]);
     }
-  }, [sheetsWithAmount, selectedSheet]);
+  }, [sheetsWithData, selectedSheet]);
 
   // Click outside handler
   useEffect(() => {
@@ -56,45 +51,34 @@ export default function RandomSampleModal({ onClose }) {
     };
   }, []);
 
-  const handleProceed = () => {
-    if (!activeTable?.data) return;
+  // Toggle row selection
+  const toggleRowSelection = (row, index) => {
+    const isSelected = selectedIndices.includes(index);
 
-    // Use data from selected sheet or combine valid sheets
-    let population = [];
-    let sheetPopulation = [];
-
-    if (selectedSheet) {
-      const sheetData = activeTable.data[selectedSheet];
-      if (
-        !Array.isArray(sheetData) ||
-        sheetData.length === 0 ||
-        !Object.keys(sheetData[0]).includes("AMOUNT")
-      ) {
-        setError("Selected sheet must have a valid AMOUNT column");
-        return;
-      }
-      population = sheetData;
-      sheetPopulation = [...sheetData]; // Make a copy for highlighting
-    } else {
-      // If no sheet selected, filter sheets with AMOUNT column
-      const sheetsData = sheetsWithAmount.map(
-        (sheet) => activeTable.data[sheet]
+    if (isSelected) {
+      // Remove from selection
+      setSelectedIndices(selectedIndices.filter((idx) => idx !== index));
+      setSelectedRows(
+        selectedRows.filter(
+          (item) => JSON.stringify(item) !== JSON.stringify(row)
+        )
       );
-      if (sheetsData.length === 0) {
-        setError("No sheets found with AMOUNT column");
-        return;
-      }
-      population = sheetsData.flat();
-      setError("Please select a specific sheet for better sample tracking");
+    } else {
+      // Add to selection
+      setSelectedIndices([...selectedIndices, index]);
+      setSelectedRows([...selectedRows, row]);
+    }
+    // Reset the applied flag when selection changes
+    setSelectionApplied(false);
+  };
+
+  // Update the Redux store with the selected rows
+  const handleApplySelection = () => {
+    if (selectedRows.length === 0) {
+      setError("Please select at least one row for your sample");
       return;
     }
 
-    if (sampleSize <= 0 || sampleSize > population.length) {
-      setError(`Sample size must be between 1 and ${population.length}`);
-      return;
-    }
-
-    // Standard columns for consistency
     const standardColumns = [
       "ACOUNT CODE",
       "ACCOUNT NAME",
@@ -105,58 +89,49 @@ export default function RandomSampleModal({ onClose }) {
       "USER",
     ];
 
-    // Create a copy for random sampling
-    let populationCopy = [...population];
-    const sample = [];
-    const newSelectedIndices = [];
+    // Format the selected rows
+    const formattedSample = selectedRows.map((row) => {
+      const formattedRow = {};
+      standardColumns.forEach((column) => {
+        formattedRow[column] = row[column] || "";
+      });
+      return formattedRow;
+    });
 
-    // Perform random sampling
-    for (let i = 0; i < sampleSize; i++) {
-      if (populationCopy.length === 0) break;
-      const randomIndex = Math.floor(Math.random() * populationCopy.length);
-      const selectedRow = populationCopy.splice(randomIndex, 1)[0];
-      sample.push(selectedRow);
-
-      // Find original index in sheetPopulation
-      const originalIndex = sheetPopulation.findIndex(
-        (row) => JSON.stringify(row) === JSON.stringify(selectedRow)
-      );
-      if (originalIndex !== -1) {
-        newSelectedIndices.push(originalIndex);
-      }
-    }
-
-    // Store the selected indices
-    setSelectedIndices(newSelectedIndices);
-    dispatch(setRandomSample(sample));
-    setExtracted(true);
-    setShowOnlySelected(false); // Show all rows with highlighting
+    dispatch(setRandomSample(formattedSample));
+    setSelectionApplied(true);
     setError("");
   };
 
   const handleCreatePage = () => {
-    if (!randomSample || randomSample.length === 0) {
-      setError("No data to create page");
-      return;
+    // First ensure the selection has been applied
+    if (!selectionApplied) {
+      handleApplySelection();
+      if (selectedRows.length === 0) return; // Stop if there's no selection
     }
+
     if (!pageName.trim()) {
       setError("Please enter a page name");
       return;
     }
+
     try {
       const newSheetName = pageName.trim();
       if (activeTable.data[newSheetName]) {
         setError("Page name already exists");
         return;
       }
+
+      // Use the selectedRows directly instead of relying on randomSample from Redux
       const updatedTable = {
         ...activeTable,
         data: {
           ...activeTable.data,
-          [newSheetName]: randomSample,
+          [newSheetName]: selectedRows,
         },
         sheets: [...(activeTable.sheets || []), newSheetName],
       };
+
       dispatch(updateActiveTable(updatedTable));
       setSuccess("Page created successfully!");
       setTimeout(() => {
@@ -172,7 +147,7 @@ export default function RandomSampleModal({ onClose }) {
   const sheetData = selectedSheet ? activeTable.data[selectedSheet] || [] : [];
 
   // Determine what data to display based on isolation mode
-  const displayData = showOnlySelected ? randomSample : sheetData;
+  const displayData = showOnlySelected ? selectedRows : sheetData;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 overflow-y-auto py-4">
@@ -185,11 +160,11 @@ export default function RandomSampleModal({ onClose }) {
         </button>
 
         <h2 className="mb-8 text-center text-2xl text-dark font-bold">
-          Random Selection
+          Haphazard Selection
         </h2>
 
         <div className="flex flex-col items-center gap-6 pb-7 border-dark border-b-2 w-[90%] mx-auto">
-          {/* Added Sheet dropdown */}
+          {/* Sheet dropdown */}
           <div className="flex items-center gap-4">
             <div className="relative w-[200px]" ref={dropdownRef}>
               <div
@@ -207,13 +182,17 @@ export default function RandomSampleModal({ onClose }) {
               </div>
               {isOpen && (
                 <div className="absolute top-[44px] left-0 w-[200px] bg-white border-2 border-primary rounded max-h-[200px] overflow-y-auto z-50">
-                  {sheetsWithAmount.map((sheet) => (
+                  {sheetsWithData.map((sheet) => (
                     <div
                       key={sheet}
                       className="px-4 py-2 hover:bg-primary hover:text-white cursor-pointer transition-colors"
                       onClick={() => {
                         setSelectedSheet(sheet);
                         setIsOpen(false);
+                        // Reset selections when changing sheets
+                        setSelectedRows([]);
+                        setSelectedIndices([]);
+                        setSelectionApplied(false);
                       }}
                     >
                       {sheet}
@@ -225,31 +204,22 @@ export default function RandomSampleModal({ onClose }) {
           </div>
 
           <div className="flex items-center font-semibold text-lg gap-4">
-            <span className="text-dark">Sample Size:</span>
-            <input
-              type="number"
-              value={sampleSize}
-              onChange={(e) => setSampleSize(parseInt(e.target.value) || 0)}
-              min="1"
-              max={selectedSheet ? sheetData.length : undefined}
-              className="w-16 rounded border-2 border-primary px-2 py-1 text-center h-[42px]"
-            />
-            {selectedSheet && (
-              <span className="text-sm text-gray-500">
-                (Max: {sheetData.length})
-              </span>
-            )}
+            <span className="text-dark">
+              Selected Items: {selectedRows.length}
+            </span>
           </div>
 
           <div className="flex gap-4">
             <button
-              onClick={handleProceed}
-              className="rounded bg-[#19A7CE] px-6 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px]"
+              onClick={handleApplySelection}
+              className={`rounded px-6 py-2 font-medium text-white hover:bg-[#1899BD] h-[42px] ${
+                selectionApplied ? "bg-green-600" : "bg-[#19A7CE]"
+              }`}
             >
-              GENERATE
+              {selectionApplied ? "SELECTION APPLIED ✓" : "APPLY SELECTION"}
             </button>
 
-            {extracted && randomSample && randomSample.length > 0 && (
+            {selectedRows.length > 0 && (
               <button
                 onClick={() => setShowOnlySelected(!showOnlySelected)}
                 className="rounded bg-orange-500 px-6 py-2 font-medium text-white hover:bg-orange-600 h-[42px]"
@@ -257,6 +227,10 @@ export default function RandomSampleModal({ onClose }) {
                 {showOnlySelected ? "SHOW ALL" : "ISOLATE"}
               </button>
             )}
+          </div>
+
+          <div className="text-sm mt-2 text-gray-600">
+            Click on rows to select/deselect them for your sample
           </div>
         </div>
 
@@ -266,7 +240,7 @@ export default function RandomSampleModal({ onClose }) {
           </div>
         )}
 
-        {extracted && displayData && displayData.length > 0 && (
+        {selectedSheet && displayData && displayData.length > 0 && (
           <>
             <div className="mt-6 max-h-[400px] overflow-y-auto">
               <table className="w-full border-collapse table-fixed">
@@ -295,15 +269,21 @@ export default function RandomSampleModal({ onClose }) {
                 </thead>
                 <tbody>
                   {displayData.map((row, rowIndex) => {
-                    // Determine if this row should be highlighted
+                    // For regular view mode, check if this row is in selectedIndices
+                    // For isolated view, all rows are selected
                     const isSelected =
                       showOnlySelected ||
-                      (selectedIndices.includes(rowIndex) && !showOnlySelected);
+                      (!showOnlySelected && selectedIndices.includes(rowIndex));
 
                     return (
                       <tr
                         key={rowIndex}
-                        className={`h-10 hover:bg-gray-100 border-b border-dark ${
+                        onClick={() => {
+                          if (!showOnlySelected) {
+                            toggleRowSelection(row, rowIndex);
+                          }
+                        }}
+                        className={`h-10 hover:bg-gray-100 border-b border-dark cursor-pointer ${
                           isSelected ? "bg-red-200" : ""
                         }`}
                       >
@@ -334,7 +314,7 @@ export default function RandomSampleModal({ onClose }) {
               </table>
             </div>
 
-            {randomSample && randomSample.length > 0 && (
+            {selectedRows.length > 0 && (
               <div className="mt-6 flex items-center justify-center gap-4">
                 <input
                   type="text"
@@ -360,9 +340,9 @@ export default function RandomSampleModal({ onClose }) {
           </>
         )}
 
-        {!extracted && !error && (
+        {(!selectedSheet || sheetData.length === 0) && !error && (
           <div className="mt-6 text-center text-sm text-gray-500">
-            Select a sheet and sample size, then generate to view samples
+            Select a sheet to start creating your manual sample
           </div>
         )}
       </div>

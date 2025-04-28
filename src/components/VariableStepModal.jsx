@@ -184,7 +184,7 @@ export default function VariableStepModal({ onClose }) {
           <CircleX />
         </button>
         <h2 className="mb-8 text-center text-2xl text-dark font-bold">
-          Variable Step Sample (Systematic Selection)
+          Systematic selection (Variable Step)
         </h2>
         <div className="flex flex-col items-center gap-6 pb-7 border-dark border-b-2 w-[90%] mx-auto">
           {/* Dropdown, Sample Size, Start Row inputs */}

@@ -201,7 +201,7 @@ export default function WeightedRandomModal({ onClose }) {
           <CircleX />
         </button>
         <h2 className="mb-8 text-center text-2xl text-dark font-bold">
-          Weighted Random Sample
+          Monetary Unit Sampling
         </h2>
         <div className="flex flex-col items-center gap-6 pb-7 border-dark border-b-2 w-[90%] mx-auto">
           {/* Choose Sheet dropdown */}

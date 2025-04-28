@@ -4,16 +4,26 @@ import { useSelector, useDispatch } from "react-redux";
 import { useState, useMemo, useEffect, useRef, useLayoutEffect } from "react";
 import ExtractDataModal from "./ExtractDataModal";
 import { updateActiveTable, deletePage } from "../redux/tableSlice";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 
 const Table = ({ isEditable }) => {
   const [showModal, setShowModal] = useState(false);
   const [extractSheet, setExtractSheet] = useState(null);
+  const [editingSheetName, setEditingSheetName] = useState(null);
+  const [newSheetName, setNewSheetName] = useState("");
+  const editInputRef = useRef(null);
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
   );
   const dispatch = useDispatch();
   const tableRef = useRef(null);
+
+  // Use effect to focus input when entering edit mode
+  useEffect(() => {
+    if (editingSheetName && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editingSheetName]);
 
   const sheetNames = useMemo(() => {
     return activeTable.data ? Object.keys(activeTable.data) : [];
@@ -23,12 +33,69 @@ const Table = ({ isEditable }) => {
     activeTable.activePage || (sheetNames.length > 0 ? sheetNames[0] : null)
   );
 
+  // Function to handle page rename
+  const handleRenameSheet = (oldName) => {
+    if (!newSheetName.trim() || oldName === newSheetName.trim() || isEditable) {
+      // Cancel if name is empty, unchanged, or in edit mode
+      setEditingSheetName(null);
+      return;
+    }
+
+    // Check if the new name already exists
+    if (activeTable.data[newSheetName.trim()]) {
+      alert("A page with this name already exists");
+      return;
+    }
+
+    // Create a copy of data object with renamed key
+    const updatedData = {};
+    Object.keys(activeTable.data).forEach((key) => {
+      if (key === oldName) {
+        updatedData[newSheetName.trim()] = activeTable.data[key];
+      } else {
+        updatedData[key] = activeTable.data[key];
+      }
+    });
+
+    // Update active page if it's being renamed
+    const updatedActivePage =
+      activePage === oldName ? newSheetName.trim() : activePage;
+
+    dispatch(
+      updateActiveTable({
+        data: updatedData,
+        activePage: updatedActivePage,
+      })
+    );
+
+    setEditingSheetName(null);
+  };
+
+  // Function to start editing sheet name
+  const startEditSheetName = (sheetName, e) => {
+    e.stopPropagation();
+    if (!isEditable) {
+      setEditingSheetName(sheetName);
+      setNewSheetName(sheetName);
+    }
+  };
+
+  // Handle key press in edit mode
+  const handleKeyPress = (e, oldName) => {
+    if (e.key === "Enter") {
+      handleRenameSheet(oldName);
+    } else if (e.key === "Escape") {
+      setEditingSheetName(null);
+    }
+  };
+
   const sheetData = useMemo(() => {
     return activePage && activeTable.data
       ? activeTable.data[activePage] || []
       : [];
   }, [activePage, activeTable.data]);
 
+  // Rest of the component code remains unchanged
   const columns = useMemo(() => {
     const allKeys = new Set();
     sheetData.forEach((row) => {
@@ -124,7 +191,7 @@ const Table = ({ isEditable }) => {
           <div
             key={sheetName}
             onClick={
-              !isEditable
+              !isEditable && editingSheetName !== sheetName
                 ? () => {
                     setActivePage(sheetName);
                     dispatch(updateActiveTable({ activePage: sheetName }));
@@ -135,79 +202,110 @@ const Table = ({ isEditable }) => {
               height: rowHeights[idx] || CELL_HEIGHT,
             }}
             className={`group relative flex items-center justify-between pl-4 border-r border-b border-dark font-bold text-[#05445e] uppercase tracking-wider
-              ${!isEditable ? "cursor-pointer" : "cursor-default "}
+              ${
+                !isEditable && editingSheetName !== sheetName
+                  ? "cursor-pointer"
+                  : "cursor-default "
+              }
               ${
                 activePage === sheetName
                   ? `${isEditable ? "bg-[#8E8D8D]" : "bg-primary"} text-white`
                   : "hover:bg-gray-100"
               }`}
           >
-            <span
-              {...(sheetName.length > 4 ? { title: sheetName } : {})}
-              className={`text-center truncate max-w-[120px] ${getTextSizeClass(
-                sheetName
-              )}`}
-            >
-              {sheetName}
-            </span>
-            <div className="flex items-center space-x-2 px-2">
-              <div className="h-full flex items-center bg-[#d7d4d4] px-2 rounded">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 60 60"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setExtractSheet(sheetName);
-                    setShowModal(true);
-                  }}
-                  className="cursor-pointer hover:opacity-80 "
-                >
-                  <path
-                    d="M5 50H55"
-                    stroke="white"
-                    strokeWidth="3.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12.5 50V20.5C12.5 20.3674 12.5527 20.2402 12.6464 20.1464C12.7402 20.0527 12.8674 20 13 20H19.5C19.6326 20 19.7598 20.0527 19.8536 20.1464C19.9473 20.2402 20 20.3674 20 20.5V50"
-                    stroke="white"
-                    strokeWidth="3.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M27.5 50V10.6667C27.5 10.2985 27.7238 10 28 10H34.5C34.7762 10 35 10.2985 35 10.6667V50"
-                    stroke="white"
-                    strokeWidth="3.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M42.5 50V27.875C42.5 27.6679 42.7239 27.5 43 27.5H49.5C49.7761 27.5 50 27.6679 50 27.875V50"
-                    stroke="white"
-                    strokeWidth="3.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (
-                    window.confirm("Are you sure you want to delete this page?")
-                  ) {
-                    dispatch(deletePage({ pageName: sheetName }));
-                  }
-                }}
-                className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
+            {editingSheetName === sheetName ? (
+              <input
+                ref={editInputRef}
+                type="text"
+                value={newSheetName}
+                onChange={(e) => setNewSheetName(e.target.value)}
+                onKeyDown={(e) => handleKeyPress(e, sheetName)}
+                onBlur={() => handleRenameSheet(sheetName)}
+                className="bg-white text-black w-[120px] p-1 border border-primary rounded outline-none"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span
+                {...(sheetName.length > 4 ? { title: sheetName } : {})}
+                className={`text-center truncate max-w-[120px] ${getTextSizeClass(
+                  sheetName
+                )}`}
               >
-                <Trash2 size={16} />
-              </button>
+                {sheetName}
+              </span>
+            )}
+            <div className="flex items-center space-x-2 px-2">
+              {editingSheetName !== sheetName && (
+                <>
+                  <div className="h-full flex items-center bg-[#d7d4d4] px-2 rounded">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 60 60"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExtractSheet(sheetName);
+                        setShowModal(true);
+                      }}
+                      className="cursor-pointer hover:opacity-80"
+                    >
+                      <path
+                        d="M5 50H55"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M12.5 50V20.5C12.5 20.3674 12.5527 20.2402 12.6464 20.1464C12.7402 20.0527 12.8674 20 13 20H19.5C19.6326 20 19.7598 20.0527 19.8536 20.1464C19.9473 20.2402 20 20.3674 20 20.5V50"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M27.5 50V10.6667C27.5 10.2985 27.7238 10 28 10H34.5C34.7762 10 35 10.2985 35 10.6667V50"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M42.5 50V27.875C42.5 27.6679 42.7239 27.5 43 27.5H49.5C49.7761 27.5 50 27.6679 50 27.875V50"
+                        stroke="white"
+                        strokeWidth="3.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <button
+                    onClick={(e) => startEditSheetName(sheetName, e)}
+                    className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    title="Rename page"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this page?"
+                        )
+                      ) {
+                        dispatch(deletePage({ pageName: sheetName }));
+                      }
+                    }}
+                    className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
+                    title="Delete page"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))}

@@ -13,6 +13,7 @@ import VariableStepModal from "./VariableStepModal"; // Import the new VariableS
 import WeightedRandomModal from "./WeightedRandomModal"; // new import
 import BlockSelectionModal from "./BlockSelectionModal"; // Add import at the top
 import ExportModal from "./ExportModal"; // new import
+import HaphazardSelectionModal from "./HaphazardSelectionModal"; // Import for Haphazard Selection
 
 const Menu = ({ isEditable = true }) => {
   const [showModal, setShowModal] = useState(false);
@@ -22,6 +23,8 @@ const Menu = ({ isEditable = true }) => {
   const [showVariableStepModal, setShowVariableStepModal] = useState(false); // Add state for variable step modal
   const [showWeightedRandomModal, setShowWeightedRandomModal] = useState(false); // new state
   const [showBlockSelectionModal, setShowBlockSelectionModal] = useState(false); // Add state
+  const [showHaphazardSelectionModal, setShowHaphazardSelectionModal] =
+    useState(false); // Add state for Haphazard Selection
   const [showExportModal, setShowExportModal] = useState(false); // new state
   const activeTable = useSelector(
     (state) => state.tables?.activeTable || { data: {} }
@@ -29,11 +32,12 @@ const Menu = ({ isEditable = true }) => {
   const dispatch = useDispatch();
 
   const sampleOptions = [
-    { value: "Random Sample", label: "Random Sample" },
-    { value: "Fixed Step", label: "Fixed Step" },
-    { value: "Variable Step", label: "Variable Step" },
-    { value: "Weighted Random", label: "Weighted Random" },
+    { value: "Random Sample", label: "Random Selection" },
+    { value: "Fixed Step", label: "Systematic selection (Fixed Step)" },
+    { value: "Variable Step", label: "Systematic selection (Variable Step)" },
+    { value: "Weighted Random", label: "Monetary Unit Sampling" },
     { value: "Block Selection", label: "Block Selection" },
+    { value: "Haphazard Selection", label: "Haphazard Selection" },
   ];
 
   const SortBy = [
@@ -189,6 +193,8 @@ const Menu = ({ isEditable = true }) => {
       setShowWeightedRandomModal(true);
     } else if (option.value === "Block Selection") {
       setShowBlockSelectionModal(true);
+    } else if (option.value === "Haphazard Selection") {
+      setShowHaphazardSelectionModal(true);
     }
   };
 
@@ -241,6 +247,13 @@ const Menu = ({ isEditable = true }) => {
         <Modal open={showBlockSelectionModal}>
           <BlockSelectionModal
             onClose={() => setShowBlockSelectionModal(false)}
+          />
+        </Modal>
+      )}
+      {showHaphazardSelectionModal && (
+        <Modal open={showHaphazardSelectionModal}>
+          <HaphazardSelectionModal
+            onClose={() => setShowHaphazardSelectionModal(false)}
           />
         </Modal>
       )}
