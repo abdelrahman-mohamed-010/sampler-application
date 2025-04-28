@@ -192,16 +192,30 @@ const PopulationHomogeneity = ({ onClose }) => {
 
       let updatedData = { ...activeTable.data };
       let pagesCreated = 0;
+      let nonUnassignedGroups = 0;
 
-      // Extract each qualifying subpopulation to a separate page
+      console.log("Starting extraction process");
+      console.log(`Total subpopulations: ${activeTable.subpopulations.length}`);
+
+      // Count non-unassigned groups first
+      activeTable.subpopulations.forEach((subpop) => {
+        if (!subpop.isUnassigned) {
+          nonUnassignedGroups++;
+        }
+      });
+
+      console.log(`Non-unassigned groups: ${nonUnassignedGroups}`);
+
+      // Extract each subpopulation to a separate page (except for unassigned groups)
       activeTable.subpopulations.forEach((subpop, index) => {
-        const subpopCV = parseFloat(subpop.cv);
-        const maxAcceptableCV = parseFloat(maxCv);
-
-        if (subpopCV <= maxAcceptableCV && !subpop.isUnassigned) {
+        // Only skip unassigned groups, extract all valid groups regardless of CV
+        if (!subpop.isUnassigned) {
           // Create a new page for this subpopulation
-          // Use the original sheet name with the CV appended
-          const newSheetName = `${sheetKey}%${subpop.cv}`;
+          // Use the original sheet name with group index to ensure uniqueness
+          const newSheetName = `${sheetKey}_Group${index + 1}_CV${subpop.cv}`;
+          console.log(
+            `Creating page: ${newSheetName} with ${subpop.data.length} items`
+          );
 
           // Add the subpopulation data as a new page
           updatedData[newSheetName] = subpop.data;
@@ -209,9 +223,20 @@ const PopulationHomogeneity = ({ onClose }) => {
         }
       });
 
+      console.log(
+        `Pages created: ${pagesCreated} out of ${nonUnassignedGroups} groups`
+      );
+
       if (pagesCreated === 0) {
-        setError("No data meets the CV criteria");
+        setError("No groups available to extract");
         return;
+      }
+
+      // Verify all pages were created
+      if (pagesCreated !== nonUnassignedGroups) {
+        console.warn(
+          `Warning: Created ${pagesCreated} pages but had ${nonUnassignedGroups} groups`
+        );
       }
 
       const updatedTable = {
@@ -221,9 +246,7 @@ const PopulationHomogeneity = ({ onClose }) => {
 
       dispatch(updateActiveTable(updatedTable));
       setSuccess(
-        `Created ${pagesCreated} new page${
-          pagesCreated > 1 ? "s" : ""
-        } with qualified subsamples`
+        `Created ${pagesCreated} new pages with all groups (${nonUnassignedGroups} groups total)`
       );
       setTimeout(() => onClose(), 1500);
     } catch (err) {
