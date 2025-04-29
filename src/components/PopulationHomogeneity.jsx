@@ -193,50 +193,44 @@ const PopulationHomogeneity = ({ onClose }) => {
       let updatedData = { ...activeTable.data };
       let pagesCreated = 0;
       let nonUnassignedGroups = 0;
+      let unassignedData = [];
 
       console.log("Starting extraction process");
       console.log(`Total subpopulations: ${activeTable.subpopulations.length}`);
 
-      // Count non-unassigned groups first
+      // Count non-unassigned groups first and collect unassigned data
       activeTable.subpopulations.forEach((subpop) => {
         if (!subpop.isUnassigned) {
           nonUnassignedGroups++;
+        } else {
+          unassignedData = unassignedData.concat(subpop.data);
         }
       });
 
       console.log(`Non-unassigned groups: ${nonUnassignedGroups}`);
 
-      // Extract each subpopulation to a separate page (except for unassigned groups)
+      // Extract each subpopulation to a separate page (including unassigned groups)
       activeTable.subpopulations.forEach((subpop, index) => {
-        // Only skip unassigned groups, extract all valid groups regardless of CV
         if (!subpop.isUnassigned) {
-          // Create a new page for this subpopulation
-          // Use the original sheet name with group index to ensure uniqueness
           const newSheetName = `${sheetKey}_Group${index + 1}_CV${subpop.cv}`;
           console.log(
             `Creating page: ${newSheetName} with ${subpop.data.length} items`
           );
-
-          // Add the subpopulation data as a new page
           updatedData[newSheetName] = subpop.data;
           pagesCreated++;
         }
       });
 
-      console.log(
-        `Pages created: ${pagesCreated} out of ${nonUnassignedGroups} groups`
-      );
+      // Create a separate page for unassigned items if any exist
+      if (unassignedData.length > 0) {
+        const unassignedSheetName = `${sheetKey}_Unassigned`;
+        updatedData[unassignedSheetName] = unassignedData;
+        pagesCreated++;
+      }
 
       if (pagesCreated === 0) {
         setError("No groups available to extract");
         return;
-      }
-
-      // Verify all pages were created
-      if (pagesCreated !== nonUnassignedGroups) {
-        console.warn(
-          `Warning: Created ${pagesCreated} pages but had ${nonUnassignedGroups} groups`
-        );
       }
 
       const updatedTable = {
@@ -246,7 +240,7 @@ const PopulationHomogeneity = ({ onClose }) => {
 
       dispatch(updateActiveTable(updatedTable));
       setSuccess(
-        `Created ${pagesCreated} new pages with all groups (${nonUnassignedGroups} groups total)`
+        `Created ${pagesCreated} new pages (${nonUnassignedGroups} groups + unassigned items)`
       );
       setTimeout(() => onClose(), 1500);
     } catch (err) {
