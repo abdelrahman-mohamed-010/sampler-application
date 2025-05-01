@@ -44,6 +44,12 @@ const Home = () => {
           const processedData = jsonData.map((row) => {
             const newRow = { ...row };
             Object.keys(newRow).forEach((key) => {
+              // Check if the value is empty or "1/0/1900" and convert it to empty string
+              if (newRow[key] === "1/0/1900" || newRow[key] === "") {
+                newRow[key] = "";
+                return;
+              }
+
               if (
                 key.toUpperCase() !== "AMOUNT" && // Skip AMOUNT column
                 typeof newRow[key] === "string" &&

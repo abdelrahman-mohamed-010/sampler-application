@@ -83,6 +83,16 @@ const SaveOption = ({ isEditable }) => {
     setIsDropdownOpen(false);
   };
 
+  // Function to check if first row is a header row
+  const isFirstRowHeader = (sheetData, columns) => {
+    if (!sheetData || sheetData.length === 0) return false;
+    return columns.every(
+      (col) =>
+        typeof sheetData[0][col] === "string" &&
+        sheetData[0][col].trim().toLowerCase() === col.trim().toLowerCase()
+    );
+  };
+
   const handleExportExcel = () => {
     if (!title.trim()) {
       setShowError(true);
@@ -96,19 +106,75 @@ const SaveOption = ({ isEditable }) => {
       // Export all sheets
       Object.keys(activeTable.data).forEach((sheetName) => {
         const sheetData = activeTable.data[sheetName];
-        const worksheet = XLSX.utils.json_to_sheet(sheetData);
+
+        // Get columns from the first row
+        const columns = sheetData.length > 0 ? Object.keys(sheetData[0]) : [];
+
+        // Check if first row appears to be headers
+        const hasHeaderRow = isFirstRowHeader(sheetData, columns);
+
+        // If first row contains headers, remove it to prevent duplication
+        const dataToExport = hasHeaderRow ? sheetData.slice(1) : sheetData;
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+
+        // Format the headers (bold and center-aligned)
+        const range = XLSX.utils.decode_range(worksheet["!ref"]);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const headerCell = XLSX.utils.encode_cell({ r: 0, c: C });
+          if (!worksheet[headerCell]) continue;
+
+          // Apply bold font and center alignment
+          worksheet[headerCell].s = {
+            font: { bold: true },
+            alignment: { horizontal: "center", vertical: "center" },
+          };
+        }
+
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
       });
     } else {
       // Export only selected sheet
       const sheetData = activeTable.data[selectedPage];
-      const worksheet = XLSX.utils.json_to_sheet(sheetData);
+
+      // Get columns from the first row
+      const columns = sheetData.length > 0 ? Object.keys(sheetData[0]) : [];
+
+      // Check if first row appears to be headers
+      const hasHeaderRow = isFirstRowHeader(sheetData, columns);
+
+      // If first row contains headers, remove it to prevent duplication
+      const dataToExport = hasHeaderRow ? sheetData.slice(1) : sheetData;
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+
+      // Format the headers (bold and center-aligned)
+      const range = XLSX.utils.decode_range(worksheet["!ref"]);
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const headerCell = XLSX.utils.encode_cell({ r: 0, c: C });
+        if (!worksheet[headerCell]) continue;
+
+        // Apply bold font and center alignment
+        worksheet[headerCell].s = {
+          font: { bold: true },
+          alignment: { horizontal: "center", vertical: "center" },
+        };
+      }
+
       XLSX.utils.book_append_sheet(workbook, worksheet, selectedPage);
     }
 
     // Use the trimmed title exactly for the file name
     const fileName = `${title.trim()}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+
+    // Set up workbook properties for styles to be applied
+    const wopts = {
+      bookType: "xlsx",
+      bookSST: false,
+      type: "binary",
+      cellStyles: true,
+    };
+    XLSX.writeFile(workbook, fileName, wopts);
   };
 
   return (
