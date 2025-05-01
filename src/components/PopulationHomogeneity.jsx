@@ -89,7 +89,6 @@ const PopulationHomogeneity = ({ onClose }) => {
   const handleProceed = () => {
     try {
       const formaData = sheetData;
-      // Convert to absolute values
       const absoluteAmounts = formaData
         .map((item, index) => ({
           index,
@@ -97,31 +96,23 @@ const PopulationHomogeneity = ({ onClose }) => {
           originalData: item,
         }))
         .filter((item) => !isNaN(item.amount));
-
-      // Sort by amount
       const sortedItems = [...absoluteAmounts].sort(
         (a, b) => a.amount - b.amount
       );
 
       let subpopulations = [];
       let unassigned = [];
-
       let i = 0;
       while (i < sortedItems.length) {
         let group = [sortedItems[i]];
         let j = i + 1;
 
-        // Try to add more items to the group while keeping CV <= maxCv
         while (j < sortedItems.length) {
           const testGroup = [...group, sortedItems[j]];
-          const testAmounts = testGroup.map((item) => item.amount);
-
-          // Calculate CV for test group
-          const mean = calculateMean(testAmounts);
-          const stdDev = calculateStdDev(testAmounts, mean);
-          const cv = (stdDev / mean) * 100;
-
-          if (cv <= parseFloat(maxCv)) {
+          const testCv = parseFloat(
+            calculateCV(testGroup.map((item) => item.originalData))
+          );
+          if (testCv <= parseFloat(maxCv)) {
             group = testGroup;
             j++;
           } else {
@@ -129,21 +120,17 @@ const PopulationHomogeneity = ({ onClose }) => {
           }
         }
 
-        // If we could form a group with more than one element
         if (group.length > 1) {
           const groupData = group.map((item) => item.originalData);
           const groupCV = calculateCV(groupData);
-
           subpopulations.push({
             indices: group.map((item) => item.index),
             cv: groupCV,
             data: groupData,
             items: group,
           });
-
           i = j;
         } else {
-          // This item couldn't form a group, add to unassigned
           unassigned.push(sortedItems[i]);
           i++;
         }
