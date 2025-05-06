@@ -250,7 +250,7 @@ const PopulationHomogeneity = ({ onClose }) => {
 
       <div className="flex flex-col space-y-6">
         <h1 className="text-dark font-semibold text-center text-xl">
-          Population Homogeneity
+          Population Homogeneity (Stratification)
         </h1>
 
         {error && (

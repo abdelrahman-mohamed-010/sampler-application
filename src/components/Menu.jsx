@@ -305,7 +305,7 @@ const Menu = ({ isEditable = true }) => {
 
         <button
           className={`
-          text-left ps-4 pr-4 shadow-lg text-nowrap rounded px-[10px] border-[1px] h-[70px] text-[20px] w-[289px] font-normal bg-white
+          text-left ps-4 pr-4 shadow-lg text-nowrap rounded px-[10px] border-[1px] h-[70px] text-[15px] w-[289px] font-normal bg-white
           ${
             isEditable
               ? "cursor-not-allowed text-gray-400"
@@ -315,7 +315,7 @@ const Menu = ({ isEditable = true }) => {
           disabled={isEditable}
           onClick={() => setShowPopulationModal(true)}
         >
-          Population Homogeneity
+          Population Homogeneity (Stratification)
         </button>
 
         <CustomDropdown
