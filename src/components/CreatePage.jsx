@@ -71,15 +71,21 @@ const CreatePage = ({ onClose }) => {
         sheetData.forEach((row) => {
           if (!row) return;
 
+          // Find the date column
+          const dateColumn = Object.keys(row).find((key) =>
+            key.toLowerCase().includes("date")
+          );
+
           // Date filtering
-          const entryDate = new Date(row["Entry Date"]);
+          const entryDate = dateColumn ? new Date(row[dateColumn]) : null;
           const startDate = filters.startDate
             ? new Date(filters.startDate)
             : null;
           const endDate = filters.endDate ? new Date(filters.endDate) : null;
-          const dateMatch =
-            (!startDate || entryDate >= startDate) &&
-            (!endDate || entryDate <= endDate);
+          const dateMatch = !entryDate
+            ? true
+            : (!startDate || entryDate >= startDate) &&
+              (!endDate || entryDate <= endDate);
 
           // Narration filtering
           const narrationMatch =
