@@ -174,6 +174,23 @@ export default function FixedStepModal({ onClose }) {
 
   // Determine what data to display based on isolation mode
   const displayData = showOnlySelected ? randomSample : sheetData;
+  // Dynamic date column detection (handles 'Entry Date', 'date', 'DATE')
+  const dateKey =
+    displayData.length > 0
+      ? Object.keys(displayData[0]).find((k) =>
+          ["entry date", "date"].includes(k.trim().toLowerCase())
+        ) || "Entry Date"
+      : "Entry Date";
+  // Columns to display, injecting dynamic date key
+  const displayColumns = [
+    "ACOUNT CODE",
+    "ACCOUNT NAME",
+    dateKey,
+    "ENTRY NUMBER",
+    "NARRATION",
+    "AMOUNT",
+    "USER",
+  ];
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 overflow-y-auto py-4">
@@ -311,15 +328,7 @@ export default function FixedStepModal({ onClose }) {
                     <th className="font-semibold w-[5%] border-r border-white text-[14px]">
                       Line
                     </th>
-                    {[
-                      "ACOUNT CODE",
-                      "ACCOUNT NAME",
-                      "Entry Date",
-                      "ENTRY NUMBER",
-                      "NARRATION",
-                      "AMOUNT",
-                      "USER",
-                    ].map((header, idx) => (
+                    {displayColumns.map((header, idx) => (
                       <th
                         key={idx}
                         className="font-semibold w-[13%] border-r border-white text-[14px] px-2"
@@ -346,15 +355,7 @@ export default function FixedStepModal({ onClose }) {
                         <td className="px-2 text-[#05445e] text-[14px] font-normal border-r border-dark text-center truncate">
                           {rowIndex + 1}
                         </td>
-                        {[
-                          "ACOUNT CODE",
-                          "ACCOUNT NAME",
-                          "Entry Date",
-                          "ENTRY NUMBER",
-                          "NARRATION",
-                          "AMOUNT",
-                          "USER",
-                        ].map((column, colIndex) => (
+                        {displayColumns.map((column, colIndex) => (
                           <td
                             key={colIndex}
                             className="text-[#05445e] text-[14px] text-center font-normal border-r border-dark last:border-r-0 px-2 truncate"

@@ -57,6 +57,14 @@ const Menu = ({ isEditable = true }) => {
     setShowExportModal(true);
   };
 
+  // Helper to detect date column key in a row object
+  function findDateKey(row) {
+    return Object.keys(row).find((k) => {
+      const lk = k.trim().toLowerCase();
+      return lk === "entry date" || lk === "date";
+    });
+  }
+
   const handleSortBySelect = (option) => {
     if (!activeTable?.data) return;
     const newData = { ...activeTable.data };
@@ -95,18 +103,21 @@ const Menu = ({ isEditable = true }) => {
 
     if (
       option.value.startsWith("Entry Date") &&
-      newData[activeSheet].length > 0 &&
-      Object.hasOwn(newData[activeSheet][0], "Entry Date")
+      newData[activeSheet].length > 0
     ) {
-      sortedColumn = "Entry Date";
-      sortedOrder = option.value.includes("New to Old") ? "desc" : "asc";
-      const sorted = [...newData[activeSheet]].sort((a, b) => {
-        const dateA = parseDate(a["Entry Date"]);
-        const dateB = parseDate(b["Entry Date"]);
-        return dateA - dateB;
-      });
-      newData[activeSheet] =
-        option.value === "Entry Date: New to Old" ? sorted.reverse() : sorted;
+      const firstRow = newData[activeSheet][0];
+      const dateKey = findDateKey(firstRow);
+      if (dateKey) {
+        sortedColumn = dateKey;
+        sortedOrder = option.value.includes("New to Old") ? "desc" : "asc";
+        const sorted = [...newData[activeSheet]].sort((a, b) => {
+          const dateA = parseDate(a[dateKey]);
+          const dateB = parseDate(b[dateKey]);
+          return dateA - dateB;
+        });
+        newData[activeSheet] =
+          option.value === "Entry Date: New to Old" ? sorted.reverse() : sorted;
+      }
     } else if (option.value === "Amount: Descending") {
       sortedColumn = "AMOUNT";
       sortedOrder = "desc";
