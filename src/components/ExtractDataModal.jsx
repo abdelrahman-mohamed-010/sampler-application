@@ -171,7 +171,9 @@ const ExtractDataModal = ({ isOpen, onClose, sheetName }) => {
         const colValues = rows
           .map((r) => r[column])
           .filter((val) => val !== "" && val != null);
-        const numericValues = colValues.map(Number).filter((v) => !isNaN(v));
+        const numericValues = colValues
+          .map((val) => parseFloat(val))
+          .filter((v) => !isNaN(v));
         const colResult = { column };
         checkedMeasures.forEach((measure) => {
           switch (measure.name) {
