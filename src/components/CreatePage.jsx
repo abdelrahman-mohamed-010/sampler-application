@@ -26,6 +26,7 @@ const CreatePage = ({ onClose }) => {
     accountCodeFrom: "", // new: range start for account code
     accountCodeTo: "", // new: range end for account code
     user: "", // new: replaced accountTitle
+    newUser: "", // Add new user field
   });
 
   const [error, setError] = useState("");
@@ -112,14 +113,22 @@ const CreatePage = ({ onClose }) => {
             filters.accountCodeTo === "" || code <= filters.accountCodeTo;
           const accountCodeMatch = minValidCode && maxValidCode;
 
-          // User filtering (replacing old accountTitle filtering)
+          // User filtering (for both user and newUser)
           const userMatch =
-            !filters.user ||
-            (row["ACCOUNT NAME"] &&
-              row["ACCOUNT NAME"]
-                .toString()
-                .toLowerCase()
-                .includes(filters.user.toLowerCase()));
+            (!filters.user ||
+              (row["ACCOUNT NAME"] &&
+                row["ACCOUNT NAME"]
+                  .toString()
+                  .toLowerCase()
+                  .trim()
+                  .includes(filters.user.toLowerCase().trim()))) &&
+            (!filters.newUser ||
+              (row["USER"] &&
+                row["USER"]
+                  .toString()
+                  .toLowerCase()
+                  .trim()
+                  .includes(filters.newUser.toLowerCase().trim())));
 
           if (
             dateMatch &&
@@ -175,7 +184,7 @@ const CreatePage = ({ onClose }) => {
 
   return (
     <motion.div
-      className="bg-white shadow-lg rounded-lg max-w-md p-6 relative min-w-[1117px]  max-h-[90%]"
+      className="bg-white shadow-lg rounded-lg max-w-md p-6 relative min-w-[1117px] max-h-[90vh] overflow-y-auto"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -305,10 +314,25 @@ const CreatePage = ({ onClose }) => {
             />
           </div>
 
-          {/* New separate User filter */}
+          {/* New USER filter */}
           <div className="mb-4 flex items-center gap-6">
             <label className="block mb-2 font-semibold text-dark text-xl">
-              User:
+              USER:
+            </label>
+            <input
+              type="text"
+              name="newUser"
+              value={filters.newUser}
+              onChange={handleFilterChange}
+              className="rounded text-center p-2 w-[158px] h-[42px] border-2 border-primary"
+              placeholder="USER"
+            />
+          </div>
+
+          {/* Existing Account Name filter */}
+          <div className="mb-4 flex items-center gap-6">
+            <label className="block mb-2 font-semibold text-dark text-xl">
+              Account Name:
             </label>
             <input
               type="text"
@@ -316,7 +340,7 @@ const CreatePage = ({ onClose }) => {
               value={filters.user}
               onChange={handleFilterChange}
               className="rounded text-center p-2 w-[158px] h-[42px] border-2 border-primary"
-              placeholder="TITLE"
+              placeholder="ACCOUNT NAME"
             />
           </div>
 
